@@ -7,6 +7,9 @@ const BAR_WIDTH: float = 96.0
 const BAR_HEIGHT: float = 4.0
 const BAR_Y: float = 108.0
 
+@export var feedback: FeedbackConfig
+
+@onready var _root: Control = $Root
 @onready var _score_label: Label = $Root/ScoreLabel
 @onready var _multiplier_label: Label = $Root/MultiplierLabel
 @onready var _combo_bar: ColorRect = $Root/ComboBar
@@ -16,6 +19,21 @@ var _shown_score: int = -1
 var _shown_best: int = -1
 var _shown_combo: int = -1
 var _pop_tween: Tween
+var _intro_tween: Tween
+
+
+func _ready() -> void:
+	if feedback == null:
+		feedback = FeedbackConfig.new()
+	play_intro()
+
+
+func play_intro() -> void:
+	if _intro_tween != null and _intro_tween.is_valid():
+		_intro_tween.kill()
+	_root.modulate = Color(1, 1, 1, 0)
+	_intro_tween = create_tween()
+	_intro_tween.tween_property(_root, "modulate", Color(1, 1, 1, 1), feedback.hud_fade_in_time)
 
 
 func _process(_delta: float) -> void:
@@ -61,6 +79,6 @@ func _update_bar() -> void:
 func _pop() -> void:
 	if _pop_tween != null and _pop_tween.is_valid():
 		_pop_tween.kill()
-	_multiplier_label.scale = Vector2.ONE * 1.3
+	_multiplier_label.scale = Vector2.ONE * feedback.combo_pop_scale
 	_pop_tween = create_tween()
-	_pop_tween.tween_property(_multiplier_label, "scale", Vector2.ONE, 0.12)
+	_pop_tween.tween_property(_multiplier_label, "scale", Vector2.ONE, feedback.combo_pop_time)

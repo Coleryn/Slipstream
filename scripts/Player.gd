@@ -5,6 +5,8 @@ extends Area2D
 
 signal died
 
+@export var feedback: FeedbackConfig
+
 @export_group("Shape")
 @export var radius: float = 16.0:
 	set(value):
@@ -20,23 +22,21 @@ signal died
 @export_range(1.0, 40.0, 0.5) var smoothing: float = 14.0
 @export_range(0.1, 3.0, 0.05) var drag_sensitivity: float = 1.0
 
-@export_group("Trail")
-@export_range(0.05, 1.0, 0.01) var trail_lifetime: float = 0.22
-@export_range(0.01, 0.2, 0.01) var trail_interval: float = 0.035
-@export_range(0.0, 1.0, 0.01) var trail_alpha: float = 0.25
-@export_range(0.0, 1.0, 0.05) var trail_shrink: float = 0.4
-
 var _target_x: float = 0.0
 var _dragging: bool = false
 var _touch_index: int = -1
 var _dead: bool = false
 var _death_tween: Tween
+var _intro: float = 1.0
+var _pulse_left: float = 0.0
 var _trail_points: Array[Vector2] = []
 var _trail_ages: Array[float] = []
 var _trail_timer: float = 0.0
 
 
 func _ready() -> void:
+	if feedback == null:
+		feedback = FeedbackConfig.new()
 	area_entered.connect(_on_area_entered)
 	reset()
 
@@ -47,17 +47,30 @@ func _process(delta: float) -> void:
 	if _dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_dragging = false
 	position.x = lerpf(position.x, _target_x, 1.0 - exp(-smoothing * delta))
+	if _intro < 1.0:
+		_intro = minf(_intro + delta / maxf(feedback.player_fade_in_time, 0.001), 1.0)
+	if _pulse_left > 0.0:
+		_pulse_left = maxf(_pulse_left - delta, 0.0)
 	_update_trail(delta)
 	queue_redraw()
 
 
 func _draw() -> void:
+	var intro_curve: float = 0.85 + 0.15 * _intro
+	var pulse_curve: float = 0.0
+	if _pulse_left > 0.0:
+		pulse_curve = _pulse_left / maxf(feedback.near_miss_pulse_time, 0.001)
+	var draw_radius: float = radius * intro_curve * (1.0 + feedback.near_miss_pulse_scale * pulse_curve)
 	for i in _trail_points.size():
-		var t: float = clampf(_trail_ages[i] / trail_lifetime, 0.0, 1.0)
-		var fade: float = (1.0 - t) * trail_alpha
-		var trail_radius: float = radius * (1.0 - trail_shrink * t)
+		var t: float = clampf(_trail_ages[i] / maxf(feedback.trail_lifetime, 0.001), 0.0, 1.0)
+		var fade: float = (1.0 - t) * feedback.trail_alpha * _intro
+		var trail_radius: float = draw_radius * (1.0 - feedback.trail_shrink * t)
 		draw_circle(to_local(_trail_points[i]), trail_radius, Color(Palette.PLAYER, fade), true, -1.0, true)
-	draw_circle(Vector2.ZERO, radius, Palette.PLAYER, true, -1.0, true)
+	draw_circle(Vector2.ZERO, draw_radius, Color(Palette.PLAYER, _intro), true, -1.0, true)
+
+
+func pulse() -> void:
+	_pulse_left = maxf(feedback.near_miss_pulse_time, 0.01)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -105,6 +118,8 @@ func reset() -> void:
 	_dragging = false
 	_touch_index = -1
 	scale = Vector2.ONE
+	_intro = 0.0
+	_pulse_left = 0.0
 	show()
 	set_process(true)
 	set_process_unhandled_input(true)
@@ -141,13 +156,13 @@ func _max_x() -> float:
 func _update_trail(delta: float) -> void:
 	for i in _trail_ages.size():
 		_trail_ages[i] += delta
-	while not _trail_ages.is_empty() and _trail_ages[-1] >= trail_lifetime:
+	while not _trail_ages.is_empty() and _trail_ages[-1] >= feedback.trail_lifetime:
 		_trail_ages.pop_back()
 		_trail_points.pop_back()
 	_trail_timer -= delta
 	if _trail_timer > 0.0:
 		return
-	_trail_timer = trail_interval
+	_trail_timer = feedback.trail_interval
 	if _trail_points.is_empty() or _trail_points[0].distance_squared_to(position) > 1.0:
 		_trail_points.push_front(position)
 		_trail_ages.push_front(0.0)

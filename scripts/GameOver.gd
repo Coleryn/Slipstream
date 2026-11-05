@@ -5,6 +5,8 @@ extends CanvasLayer
 
 signal restart_pressed
 
+@export var feedback: FeedbackConfig
+
 @onready var _root: Control = $Root
 @onready var _score_label: Label = $Root/ScoreLabel
 @onready var _best_label: Label = $Root/BestLabel
@@ -16,10 +18,12 @@ var _pop_tween: Tween
 
 
 func _ready() -> void:
+	if feedback == null:
+		feedback = FeedbackConfig.new()
 	_sync_pivot()
 	_restart_button.resized.connect(_sync_pivot)
 	_restart_button.pressed.connect(_on_restart_pressed)
-	_restart_button.button_down.connect(_pop.bind(0.96))
+	_restart_button.button_down.connect(_pop.bind(feedback.button_press_scale))
 	_restart_button.button_up.connect(_pop.bind(1.0))
 	hide_result()
 
@@ -46,6 +50,7 @@ func hide_result() -> void:
 
 
 func _on_restart_pressed() -> void:
+	AudioManager.play_click()
 	restart_pressed.emit()
 
 
@@ -55,7 +60,7 @@ func _pop(target_scale: float) -> void:
 	if _pop_tween != null and _pop_tween.is_valid():
 		_pop_tween.kill()
 	_pop_tween = create_tween()
-	_pop_tween.tween_property(_restart_button, "scale", Vector2.ONE * target_scale, 0.07)
+	_pop_tween.tween_property(_restart_button, "scale", Vector2.ONE * target_scale, feedback.button_pop_time)
 
 
 func _sync_pivot() -> void:

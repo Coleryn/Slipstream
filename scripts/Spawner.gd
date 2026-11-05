@@ -8,6 +8,7 @@ signal squares_crashed(first: Square, second: Square)
 const SQUARE_SCENE: PackedScene = preload("res://scenes/Square.tscn")
 
 @export var difficulty: DifficultyConfig
+@export var feedback: FeedbackConfig
 
 @export_group("Lanes")
 @export_range(1, 12, 1) var lane_count: int = 5
@@ -38,6 +39,8 @@ var _stats_clock: float = 0.0
 func _ready() -> void:
 	if difficulty == null:
 		difficulty = DifficultyConfig.new()
+	if feedback == null:
+		feedback = FeedbackConfig.new()
 	_interval_now = _next_interval()
 	_timer = _interval_now
 
@@ -55,6 +58,15 @@ func _process(delta: float) -> void:
 	_interval_now = _next_interval()
 	_timer += _interval_now
 	_spawn()
+
+
+func active_squares() -> Array[Square]:
+	var out: Array[Square] = []
+	for node in get_children():
+		var square := node as Square
+		if square != null and square.visible:
+			out.append(square)
+	return out
 
 
 func freeze_all() -> void:
@@ -118,7 +130,7 @@ func _try_place(x: float, y: float, square_size: float, square_speed: float) -> 
 	if square == null:
 		return false
 	square.position = Vector2(safe_x, y)
-	square.activate(square_size, square_speed, Square.Type.NORMAL, Palette.SQUARE_NORMAL)
+	square.activate(square_size, square_speed, Square.Type.NORMAL, Palette.SQUARE_NORMAL, feedback.square_fade_in_time)
 	return true
 
 

@@ -3,12 +3,19 @@ extends Node2D
 
 ## Small square particles. One instance, reused by every burst.
 
+@export var feedback: FeedbackConfig
+
 var _positions: Array[Vector2] = []
 var _velocities: Array[Vector2] = []
 var _sizes: Array[float] = []
 var _colors: Array[Color] = []
 var _ages: Array[float] = []
 var _lives: Array[float] = []
+
+
+func _ready() -> void:
+	if feedback == null:
+		feedback = FeedbackConfig.new()
 
 
 func emit_burst(origin: Vector2, color: Color, count: int, speed: float, size: float, lifetime: float) -> void:
@@ -35,6 +42,10 @@ func clear() -> void:
 	queue_redraw()
 
 
+func particle_count() -> int:
+	return _ages.size()
+
+
 func _process(delta: float) -> void:
 	if _ages.is_empty():
 		set_process(false)
@@ -46,7 +57,7 @@ func _process(delta: float) -> void:
 		if _ages[i] >= _lives[i]:
 			_remove_at(i)
 		else:
-			_velocities[i] = _velocities[i].lerp(Vector2.ZERO, minf(delta * 5.0, 1.0))
+			_velocities[i] = _velocities[i].lerp(Vector2.ZERO, minf(delta * feedback.particle_drag, 1.0))
 			_positions[i] += _velocities[i] * delta
 		i -= 1
 	queue_redraw()
@@ -55,7 +66,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	for i in _positions.size():
 		var t: float = clampf(_ages[i] / _lives[i], 0.0, 1.0)
-		var side: float = _sizes[i] * (1.0 - 0.5 * t)
+		var side: float = _sizes[i] * (1.0 - feedback.particle_shrink * t)
 		draw_rect(Rect2(_positions[i] - Vector2(side, side) * 0.5, Vector2(side, side)), Color(_colors[i], 1.0 - t))
 
 

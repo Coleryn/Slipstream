@@ -7,6 +7,7 @@ extends Resource
 @export var shake_enabled: bool = true
 @export_range(0.05, 1.0, 0.01) var shake_duration: float = 0.28
 @export_range(0.0, 24.0, 0.5) var shake_strength: float = 7.0
+@export_range(0.0, 24.0, 0.5) var max_shake_strength: float = 12.0
 @export_range(0.05, 1.0, 0.01) var crash_shake_duration: float = 0.16
 @export_range(0.0, 16.0, 0.5) var crash_shake_strength: float = 3.5
 
@@ -14,21 +15,45 @@ extends Resource
 @export_range(0.05, 1.0, 0.01) var slowmo_scale: float = 0.35
 @export_range(0.05, 1.0, 0.01) var slowmo_duration: float = 0.25
 
-@export_group("Player death")
-@export_range(0.0, 0.5, 0.01) var freeze_frame: float = 0.1
+@export_group("Player")
+@export_range(0.0, 0.5, 0.01) var player_fade_in_time: float = 0.18
+@export_range(0.0, 0.5, 0.01) var near_miss_distance: float = 18.0
+@export_range(0.0, 0.4, 0.01) var near_miss_pulse_time: float = 0.16
+@export_range(0.0, 0.5, 0.01) var near_miss_pulse_scale: float = 0.12
 @export_range(0.02, 0.6, 0.01) var player_shrink_time: float = 0.14
+
+@export_group("Player trail")
+@export_range(0.05, 1.0, 0.01) var trail_lifetime: float = 0.22
+@export_range(0.01, 0.2, 0.01) var trail_interval: float = 0.035
+@export_range(0.0, 1.0, 0.01) var trail_alpha: float = 0.25
+@export_range(0.0, 1.0, 0.05) var trail_shrink: float = 0.4
+
+@export_group("Squares")
+@export_range(0.0, 0.5, 0.01) var square_fade_in_time: float = 0.25
+
+@export_group("Particles")
 @export_range(0, 64, 1) var death_particles: int = 14
 @export_range(0.0, 400.0, 10.0) var particle_speed: float = 170.0
 @export_range(2.0, 24.0, 1.0) var particle_size: float = 8.0
 @export_range(0.05, 1.0, 0.01) var particle_lifetime: float = 0.38
+@export_range(0.0, 20.0, 0.5) var particle_drag: float = 5.0
+@export_range(0.0, 1.0, 0.05) var particle_shrink: float = 0.5
 
 @export_group("Crash")
 @export_range(0, 32, 1) var crash_particles: int = 8
 @export_range(0.0, 400.0, 10.0) var crash_particle_speed: float = 130.0
-@export_range(0.05, 1.5, 0.01) var popup_lifetime: float = 0.55
+@export_range(0.05, 1.5, 0.01) var popup_lifetime: float = 0.4
 @export_range(0.0, 200.0, 2.0) var popup_rise: float = 46.0
 @export_range(12, 48, 1) var popup_font_size: int = 32
 
-@export_group("Game over UI")
-@export_range(0.0, 0.5, 0.01) var ui_delay: float = 0.12
+@export_group("UI")
+@export_range(0.05, 0.5, 0.01) var hud_fade_in_time: float = 0.25
+@export_range(0.05, 1.0, 0.01) var ui_delay: float = 0.12
 @export_range(0.05, 1.0, 0.01) var ui_fade_time: float = 0.2
+@export_range(0.85, 1.0, 0.01) var button_press_scale: float = 0.96
+@export_range(0.02, 0.3, 0.01) var button_pop_time: float = 0.07
+@export_range(1.0, 2.0, 0.05) var combo_pop_scale: float = 1.3
+@export_range(0.02, 0.4, 0.01) var combo_pop_time: float = 0.12
+
+@export_group("Audio")
+@export var placeholder_audio: bool = true

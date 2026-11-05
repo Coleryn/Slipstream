@@ -18,6 +18,7 @@ extends Node2D
 @onready var _player: Player = $Player
 @onready var _burst: Burst = $Burst
 @onready var _popups: Popups = $Popups
+@onready var _hud: HUD = $HUD
 @onready var _game_over: GameOver = $GameOver
 
 var _dead: bool = false
@@ -33,10 +34,12 @@ func _ready() -> void:
 		feedback = FeedbackConfig.new()
 	if difficulty == null:
 		difficulty = DifficultyConfig.new()
+	AudioManager.placeholder_enabled = feedback.placeholder_audio
 	GameState.reset()
 	_player.died.connect(_on_player_died)
 	_spawner.squares_crashed.connect(_on_squares_crashed)
 	_game_over.restart_pressed.connect(_restart)
+	_hud.play_intro()
 
 
 func _process(delta: float) -> void:
@@ -44,11 +47,26 @@ func _process(delta: float) -> void:
 		GameState.advance_time(delta, difficulty.base_speed, difficulty.speed_growth, difficulty.max_speed)
 		GameState.add_score(points_per_second * delta)
 		GameState.tick_combo(delta)
+		_check_near_miss()
 	_update_shake(delta)
 
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, get_viewport_rect().size), Palette.BACKGROUND)
+
+
+func _check_near_miss() -> void:
+	var player_radius: float = _player.radius
+	for square in _spawner.active_squares():
+		square.track_player(_player.position, player_radius)
+		if square.near_miss_done():
+			continue
+		if not square.has_passed_player(_player.position, player_radius):
+			continue
+		if square.closest_gap() > 0.0 and square.closest_gap() <= feedback.near_miss_distance:
+			square.mark_near_miss()
+			_player.pulse()
+			AudioManager.play_near_miss()
 
 
 func _on_squares_crashed(first: Square, second: Square) -> void:
@@ -67,6 +85,7 @@ func _on_squares_crashed(first: Square, second: Square) -> void:
 	_popups.show_text(impact, "+%d" % awarded, feedback.popup_rise, feedback.popup_lifetime, feedback.popup_font_size)
 	_start_shake(feedback.crash_shake_duration, feedback.crash_shake_strength)
 	_start_slowmo()
+	AudioManager.play_crash(multiplier)
 
 
 func _on_player_died() -> void:
@@ -78,6 +97,7 @@ func _on_player_died() -> void:
 	_spawner.freeze_all()
 	_player.play_death(feedback.player_shrink_time)
 	_burst.emit_burst(_player.position, Palette.PLAYER, feedback.death_particles, feedback.particle_speed, feedback.particle_size, feedback.particle_lifetime)
+	AudioManager.play_death()
 	GameState.reset_combo()
 	var new_best: bool = GameState.commit_high_score()
 	_run_death_sequence(_death_token, new_best)
@@ -119,6 +139,7 @@ func _restart() -> void:
 	GameState.reset()
 	_spawner.reset()
 	_player.reset()
+	_hud.play_intro()
 
 
 func _start_shake(duration: float, strength: float) -> void:
@@ -126,7 +147,7 @@ func _start_shake(duration: float, strength: float) -> void:
 		return
 	_shake_left = duration
 	_shake_total = maxf(duration, 0.001)
-	_shake_strength = strength
+	_shake_strength = minf(strength, feedback.max_shake_strength)
 
 
 func _update_shake(delta: float) -> void:

@@ -26,15 +26,20 @@ position = Vector2(270, 480)
 
 [node name="Spawner" parent="." instance=ExtResource("2_spawner")]
 difficulty = SubResource("Resource_difficulty")
+feedback = SubResource("Resource_feedback")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
+feedback = SubResource("Resource_feedback")
 
 [node name="Burst" type="Node2D" parent="."]
 script = ExtResource("4_burst")
+feedback = SubResource("Resource_feedback")
 
 [node name="Popups" type="Node2D" parent="."]
 script = ExtResource("5_popups")
 
 [node name="HUD" parent="." instance=ExtResource("6_hud")]
+feedback = SubResource("Resource_feedback")
 
 [node name="GameOver" parent="." instance=ExtResource("7_game_over")]
+feedback = SubResource("Resource_feedback")
