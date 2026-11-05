@@ -3,6 +3,7 @@ extends Node2D
 ## Root of the game. Owns the run: scoring, crashes, death, restart.
 
 @export var feedback: FeedbackConfig
+@export var difficulty: DifficultyConfig
 
 @export_group("Scoring")
 @export_range(1.0, 200.0, 1.0) var points_per_second: float = 12.0
@@ -30,6 +31,8 @@ var _death_token: int = 0
 func _ready() -> void:
 	if feedback == null:
 		feedback = FeedbackConfig.new()
+	if difficulty == null:
+		difficulty = DifficultyConfig.new()
 	GameState.reset()
 	_player.died.connect(_on_player_died)
 	_spawner.squares_crashed.connect(_on_squares_crashed)
@@ -38,6 +41,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not _dead:
+		GameState.advance_time(delta, difficulty.base_speed, difficulty.speed_growth, difficulty.max_speed)
 		GameState.add_score(points_per_second * delta)
 		GameState.tick_combo(delta)
 	_update_shake(delta)

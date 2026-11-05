@@ -8,6 +8,7 @@ var score: float = 0.0
 var combo: int = 1
 var combo_time_left: float = 0.0
 var combo_window: float = 2.0
+var time: float = 0.0
 var speed: float = 0.0
 var high_score: int = 0
 var new_best: bool = false
@@ -15,6 +16,11 @@ var new_best: bool = false
 
 func _ready() -> void:
 	load_high_score()
+
+
+func advance_time(delta: float, base_speed: float, growth: float, speed_cap: float) -> void:
+	time += delta
+	speed = minf(base_speed + growth * sqrt(time), maxf(speed_cap, base_speed))
 
 
 func add_score(amount: float) -> void:
@@ -51,6 +57,7 @@ func commit_high_score() -> bool:
 
 func reset() -> void:
 	score = 0.0
+	time = 0.0
 	speed = 0.0
 	new_best = false
 	reset_combo()
