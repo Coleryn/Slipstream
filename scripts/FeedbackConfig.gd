@@ -21,6 +21,7 @@ extends Resource
 @export_range(0.0, 0.4, 0.01) var near_miss_pulse_time: float = 0.16
 @export_range(0.0, 0.5, 0.01) var near_miss_pulse_scale: float = 0.12
 @export_range(0.02, 0.6, 0.01) var player_shrink_time: float = 0.14
+@export_range(0.0, 0.5, 0.01) var freeze_frame: float = 0.1
 
 @export_group("Player trail")
 @export_range(0.05, 1.0, 0.01) var trail_lifetime: float = 0.22
