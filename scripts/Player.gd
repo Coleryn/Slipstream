@@ -79,6 +79,7 @@ func _draw() -> void:
 		var trail_radius: float = draw_radius * (1.0 - feedback.trail_shrink * t)
 		draw_circle(to_local(_trail_points[i]), trail_radius, Color(Palette.PLAYER, fade), true, -1.0, true)
 	draw_circle(Vector2.ZERO, draw_radius, Color(Palette.PLAYER, _intro), true, -1.0, true)
+	draw_circle(Vector2.ZERO, draw_radius * feedback.player_inner_ratio, Color(Palette.PLAYER_INNER, _intro), true, -1.0, true)
 	if shield_time > 0.0:
 		var ring_radius: float = lerpf(radius * 1.9, radius + feedback.shield_ring_gap, ease(_shield_intro, 0.4))
 		var flicker: float = 1.0

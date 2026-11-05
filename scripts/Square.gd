@@ -12,6 +12,7 @@ enum Type { NORMAL, FAST, GOLD, BIG }
 @export var speed: float = 180.0
 @export var type: Type = Type.NORMAL
 @export var cull_margin: float = 48.0
+@export_range(0.2, 0.9, 0.01) var inner_ratio: float = 0.55
 
 var _color: Color = Palette.SQUARE_NORMAL
 var _appear: float = 0.0
@@ -161,6 +162,10 @@ func _draw() -> void:
 	if _shake_left > 0.0:
 		shake = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake_strength
 	draw_rect(Rect2(Vector2(-half, -half) + shake, Vector2(size, size)), Color(_color, _appear))
+	var inner: float = size * inner_ratio
+	var inner_half: float = inner * 0.5
+	var inner_color: Color = Palette.shade(_color, Palette.INNER_DARKEN_FACTOR)
+	draw_rect(Rect2(Vector2(-inner_half, -inner_half) + shake, Vector2(inner, inner)), Color(inner_color, _appear))
 
 
 func _apply_push(delta: float) -> void:

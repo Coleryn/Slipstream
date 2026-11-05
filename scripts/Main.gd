@@ -17,6 +17,7 @@ extends Node2D
 @onready var _spawner: Spawner = $Spawner
 @onready var _player: Player = $Player
 @onready var _burst: Burst = $Burst
+@onready var _shockwaves: Shockwaves = $Shockwaves
 @onready var _popups: Popups = $Popups
 @onready var _hud: HUD = $HUD
 @onready var _game_over: GameOver = $GameOver
@@ -87,6 +88,8 @@ func _on_squares_crashed(first: Square, second: Square) -> void:
 	var points: float = maxf(first.point_multiplier(), second.point_multiplier())
 	var awarded: int = int(round(float(crash_bonus) * float(multiplier) * points))
 	GameState.add_score(float(awarded))
+	_shockwaves.emit(first_position, first_color, first.size)
+	_shockwaves.emit(second_position, second_color, second.size)
 	_burst.emit_burst(first_position, first_color, feedback.crash_particles, feedback.crash_particle_speed, feedback.particle_size, feedback.particle_lifetime)
 	_burst.emit_burst(second_position, second_color, feedback.crash_particles, feedback.crash_particle_speed, feedback.particle_size, feedback.particle_lifetime)
 	_popups.show_text(impact, "+%d" % awarded, feedback.popup_rise, feedback.popup_lifetime, feedback.popup_font_size)
@@ -178,6 +181,7 @@ func _restart() -> void:
 	_game_over.hide_result()
 	_hud.show_pulse_button(true)
 	_burst.clear()
+	_shockwaves.clear()
 	_popups.clear()
 	GameState.reset()
 	_spawner.reset()

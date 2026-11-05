@@ -47,6 +47,12 @@ extends Resource
 @export_range(0.0, 1.0, 0.01) var trail_alpha: float = 0.25
 @export_range(0.0, 1.0, 0.05) var trail_shrink: float = 0.4
 
+@export_group("Square look")
+@export_range(0.2, 0.9, 0.01) var square_inner_ratio: float = 0.55
+
+@export_group("Player look")
+@export_range(0.2, 0.9, 0.01) var player_inner_ratio: float = 0.55
+
 @export_group("Squares")
 @export_range(0.0, 0.5, 0.01) var square_fade_in_time: float = 0.25
 
@@ -56,13 +62,25 @@ extends Resource
 @export_range(2.0, 24.0, 1.0) var particle_size: float = 8.0
 @export_range(0.05, 1.0, 0.01) var particle_lifetime: float = 0.38
 @export_range(0.0, 20.0, 0.5) var particle_drag: float = 5.0
-@export_range(0.0, 1.0, 0.05) var particle_shrink: float = 0.5
+@export_range(0.0, 1.0, 0.05) var particle_shrink: float = 1.0
 
 @export_group("Crash")
 @export_range(0, 32, 1) var crash_particles: int = 8
 @export_range(0.0, 400.0, 10.0) var crash_particle_speed: float = 130.0
 @export_range(0.05, 1.5, 0.01) var popup_lifetime: float = 0.4
 @export_range(0.0, 200.0, 2.0) var popup_rise: float = 46.0
+@export_range(1.0, 4.0, 0.1) var shockwave_expand: float = 2.5
+@export_range(0.05, 0.4, 0.01) var shockwave_time: float = 0.25
+@export_range(1.0, 6.0, 0.5) var shockwave_width: float = 2.0
+@export_range(0.0, 1.0, 0.05) var shockwave_alpha: float = 0.9
+@export_range(0.0, 12.0, 0.5) var particle_spin: float = 4.0
+
+@export_group("Telegraph")
+@export_range(0.0, 1.0, 0.05) var telegraph_time: float = 0.4
+@export_range(0.0, 0.5, 0.01) var telegraph_fade: float = 0.12
+@export_range(1.0, 6.0, 0.5) var telegraph_width: float = 2.0
+@export_range(0.0, 1.0, 0.05) var telegraph_alpha: float = 0.4
+@export_range(8.0, 60.0, 1.0) var telegraph_height: float = 14.0
 @export_range(12, 48, 1) var popup_font_size: int = 32
 
 @export_group("UI")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Spawner.tscn" id="2_spawner"]
@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://scripts/FeedbackConfig.gd" id="8_feedback"]
 [ext_resource type="Script" path="res://scripts/DifficultyConfig.gd" id="9_difficulty"]
 [ext_resource type="Resource" path="res://assets/data/square_types.tres" id="10_types"]
+[ext_resource type="Script" path="res://scripts/Backdrop.gd" id="11_backdrop"]
+[ext_resource type="Script" path="res://scripts/Shockwaves.gd" id="12_shockwaves"]
 
 [sub_resource type="Resource" id="Resource_feedback"]
 script = ExtResource("8_feedback")
@@ -21,6 +23,9 @@ script = ExtResource("9_difficulty")
 script = ExtResource("1_main")
 feedback = SubResource("Resource_feedback")
 difficulty = SubResource("Resource_difficulty")
+
+[node name="Backdrop" type="Node2D" parent="."]
+script = ExtResource("11_backdrop")
 
 [node name="Camera" type="Camera2D" parent="."]
 position = Vector2(270, 480)
@@ -35,6 +40,10 @@ feedback = SubResource("Resource_feedback")
 
 [node name="Burst" type="Node2D" parent="."]
 script = ExtResource("4_burst")
+feedback = SubResource("Resource_feedback")
+
+[node name="Shockwaves" type="Node2D" parent="."]
+script = ExtResource("12_shockwaves")
 feedback = SubResource("Resource_feedback")
 
 [node name="Popups" type="Node2D" parent="."]

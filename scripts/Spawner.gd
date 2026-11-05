@@ -33,6 +33,7 @@ var _timer: float = 0.0
 var _interval_now: float = 0.0
 var _crash_clock: float = 0.0
 var _stats_clock: float = 0.0
+var _telegraphs: Array[Dictionary] = []
 var wall_nudges: int = 0
 var wall_removals: int = 0
 
@@ -55,6 +56,7 @@ func _process(delta: float) -> void:
 		if _stats_clock >= 1.0:
 			_stats_clock -= 1.0
 			print("t=%.1fs speed=%.0f interval=%.2f walls=%d/%d" % [GameState.time, GameState.speed, _interval_now, wall_nudges, wall_removals])
+	_update_telegraphs(delta)
 	_enforce_walls()
 	_timer -= delta
 	if _timer > 0.0:
@@ -79,6 +81,8 @@ func recycle_square(square: Square) -> void:
 
 func freeze_all() -> void:
 	set_process(false)
+	_telegraphs.clear()
+	queue_redraw()
 	for node in get_children():
 		var square := node as Square
 		if square != null and square.visible:
@@ -91,11 +95,44 @@ func reset() -> void:
 		if square != null and square.visible:
 			square.deactivate()
 			_pool.push_back(square)
+	_telegraphs.clear()
+	queue_redraw()
 	_interval_now = _next_interval()
 	_timer = _interval_now
 	_crash_clock = 0.0
 	_stats_clock = 0.0
 	set_process(true)
+
+func _update_telegraphs(delta: float) -> void:
+	var i: int = _telegraphs.size() - 1
+	while i >= 0:
+		var telegraph: Dictionary = _telegraphs[i]
+		if not bool(telegraph["fired"]):
+			telegraph["time_left"] = float(telegraph["time_left"]) - delta
+			if float(telegraph["time_left"]) <= 0.0:
+				telegraph["fired"] = true
+				telegraph["fade_left"] = feedback.telegraph_fade
+				var size: float = float(telegraph["size"])
+				_try_place(float(telegraph["x"]), -size * 0.5 - spawn_margin, size, float(telegraph["speed"]), telegraph["variant"])
+		else:
+			telegraph["fade_left"] = float(telegraph["fade_left"]) - delta
+			if float(telegraph["fade_left"]) <= 0.0:
+				_telegraphs.remove_at(i)
+		i -= 1
+	if not _telegraphs.is_empty():
+		queue_redraw()
+
+
+func _draw() -> void:
+	for telegraph in _telegraphs:
+		var alpha: float = feedback.telegraph_alpha
+		if bool(telegraph["fired"]):
+			alpha *= clampf(float(telegraph["fade_left"]) / maxf(feedback.telegraph_fade, 0.001), 0.0, 1.0)
+		if alpha <= 0.0:
+			continue
+		var width: float = feedback.telegraph_width
+		var origin := Vector2(float(telegraph["x"]) - width * 0.5, 0.0)
+		draw_rect(Rect2(origin, Vector2(width, feedback.telegraph_height)), Color(Palette.SQUARE_FAST, alpha))
 
 
 func _spawn() -> void:
@@ -112,8 +149,20 @@ func _spawn() -> void:
 func _spawn_single(x: float) -> void:
 	var variant: SquareVariant = types.pick(_difficulty_progress())
 	var square_size: float = _random_size(variant)
+	var square_speed: float = _random_speed(variant)
+	if variant.homing_rate > 0.0 and feedback.telegraph_time > 0.0:
+		_telegraphs.append({
+			"x": x,
+			"variant": variant,
+			"size": square_size,
+			"speed": square_speed,
+			"time_left": feedback.telegraph_time,
+			"fade_left": 0.0,
+			"fired": false,
+		})
+		return
 	var y: float = -square_size * 0.5 - spawn_margin
-	_try_place(x, y, square_size, _random_speed(variant), variant)
+	_try_place(x, y, square_size, square_speed, variant)
 
 
 func _spawn_crash_pair(x: float) -> bool:
