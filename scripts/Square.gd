@@ -4,6 +4,7 @@ extends Area2D
 ## A falling square. Driven entirely by the Spawner: pooled, reused, never freed.
 
 signal escaped(square: Square)
+signal crashed(first: Square, second: Square)
 
 enum Type { NORMAL, FAST, GOLD }
 
@@ -15,6 +16,11 @@ enum Type { NORMAL, FAST, GOLD }
 
 var _color: Color = Palette.SQUARE_NORMAL
 var _appear: float = 0.0
+var _crashing: bool = false
+
+
+func _ready() -> void:
+	area_entered.connect(_on_area_entered)
 
 
 func activate(in_size: float, in_speed: float, in_type: Type, in_color: Color) -> void:
@@ -23,7 +29,9 @@ func activate(in_size: float, in_speed: float, in_type: Type, in_color: Color) -
 	type = in_type
 	_color = in_color
 	_appear = 0.0
+	_crashing = false
 	show()
+	set_deferred("monitoring", true)
 	set_deferred("monitorable", true)
 	set_process(true)
 	_sync_shape()
@@ -33,7 +41,20 @@ func activate(in_size: float, in_speed: float, in_type: Type, in_color: Color) -
 func deactivate() -> void:
 	hide()
 	set_process(false)
+	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
+
+
+func is_crashing() -> bool:
+	return _crashing
+
+
+func begin_crash() -> void:
+	_crashing = true
+
+
+func get_draw_color() -> Color:
+	return _color
 
 
 func _process(delta: float) -> void:
@@ -48,6 +69,15 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var half: float = size * 0.5
 	draw_rect(Rect2(Vector2(-half, -half), Vector2(size, size)), Color(_color, _appear))
+
+
+func _on_area_entered(area: Area2D) -> void:
+	if _crashing:
+		return
+	var other := area as Square
+	if other == null or other == self:
+		return
+	crashed.emit(self, other)
 
 
 func _sync_shape() -> void:
