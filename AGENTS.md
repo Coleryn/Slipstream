@@ -38,3 +38,12 @@ to make fast squares crash into slow ones while staying safe.
 - Ask before adding anything not in this document.
 
 For any visual, UI, or game-feel work, always load and follow the dodge-ui-style skill.
+
+## Tooling
+- Godot executable (no `godot` on PATH):
+  `C:\Users\Lenovo\Downloads\Software\Godot_v4.6-stable_win64.exe\Godot_v4.6-stable_win64_console.exe`
+- Headless validation from the project root:
+  `& "<exe>" --headless --path "<project root>" --quit`
+  (run once with `--import` instead of `--quit` on a fresh clone so the
+  global class cache exists, otherwise `class_name` scripts fail to parse)
+- API docs (stable currently tracks 4.7): https://docs.godotengine.org/en/stable/
