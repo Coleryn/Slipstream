@@ -22,7 +22,11 @@ const TONES: Dictionary = {
 	"pulse": {"frequency": 520.0, "duration": 0.18, "volume": 0.3},
 }
 
+const SETTINGS_PATH: String = "user://settings.cfg"
+
 var placeholder_enabled: bool = true
+var sound_enabled: bool = true
+var music_enabled: bool = true
 
 var _voices: Array[AudioStreamPlayer] = []
 var _streams: Dictionary = {}
@@ -30,10 +34,45 @@ var _next_voice: int = 0
 
 
 func _ready() -> void:
+	load_settings()
 	for i in VOICE_COUNT:
 		var voice := AudioStreamPlayer.new()
 		add_child(voice)
 		_voices.append(voice)
+
+
+func set_sound_enabled(value: bool) -> void:
+	sound_enabled = value
+	save_settings()
+
+
+func set_music_enabled(value: bool) -> void:
+	music_enabled = value
+	save_settings()
+
+
+func toggle_sound() -> void:
+	set_sound_enabled(not sound_enabled)
+
+
+func toggle_music() -> void:
+	set_music_enabled(not music_enabled)
+
+
+func load_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) != OK:
+		return
+	sound_enabled = bool(config.get_value("audio", "sound", true))
+	music_enabled = bool(config.get_value("audio", "music", true))
+
+
+func save_settings() -> void:
+	var config := ConfigFile.new()
+	config.load(SETTINGS_PATH)
+	config.set_value("audio", "sound", sound_enabled)
+	config.set_value("audio", "music", music_enabled)
+	config.save(SETTINGS_PATH)
 
 
 func _exit_tree() -> void:
@@ -66,6 +105,8 @@ func play_pulse() -> void:
 
 
 func _play(kind: String, pitch: float) -> void:
+	if not sound_enabled:
+		return
 	if AudioServer.get_driver_name() == "Dummy":
 		return
 	var stream: AudioStream = _stream_for(kind)

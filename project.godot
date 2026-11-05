@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="Slipstream"
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/Menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]
 
 GameState="*res://scripts/GameState.gd"
 AudioManager="*res://scripts/AudioManager.gd"
+Transition="*res://scripts/Transition.gd"
 
 [display]
 

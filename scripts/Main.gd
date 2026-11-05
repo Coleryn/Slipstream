@@ -21,6 +21,7 @@ extends Node2D
 @onready var _popups: Popups = $Popups
 @onready var _hud: HUD = $HUD
 @onready var _game_over: GameOver = $GameOver
+@onready var _pause_overlay: PauseOverlay = $PauseOverlay
 
 var _dead: bool = false
 var _shake_left: float = 0.0
@@ -43,6 +44,10 @@ func _ready() -> void:
 	_spawner.squares_crashed.connect(_on_squares_crashed)
 	_game_over.restart_pressed.connect(_restart)
 	_hud.pulse_pressed.connect(_try_pulse)
+	_hud.pause_pressed.connect(_pause_game)
+	_game_over.menu_pressed.connect(_to_menu)
+	_pause_overlay.resumed.connect(_resume_game)
+	_pause_overlay.menu_requested.connect(_to_menu)
 	_hud.play_intro()
 
 
@@ -140,6 +145,7 @@ func _on_player_died() -> void:
 	_slowmo_token += 1
 	_spawner.freeze_all()
 	_hud.show_pulse_button(false)
+	_hud.show_pause_button(false)
 	_player.play_death(feedback.player_shrink_time)
 	_burst.emit_burst(_player.position, Palette.PLAYER, feedback.death_particles, feedback.particle_speed, feedback.particle_size, feedback.particle_lifetime)
 	AudioManager.play_death()
@@ -150,12 +156,12 @@ func _on_player_died() -> void:
 
 func _run_death_sequence(token: int, new_best: bool) -> void:
 	Engine.time_scale = 0.0
-	await get_tree().create_timer(feedback.freeze_frame, true, false, true).timeout
+	await get_tree().create_timer(feedback.freeze_frame, false, false, true).timeout
 	if token != _death_token:
 		return
 	Engine.time_scale = 1.0
 	_start_shake(feedback.shake_duration, feedback.shake_strength)
-	await get_tree().create_timer(feedback.ui_delay, true, false, true).timeout
+	await get_tree().create_timer(feedback.ui_delay, false, false, true).timeout
 	if token != _death_token:
 		return
 	_game_over.show_result(int(GameState.score), GameState.high_score, new_best, feedback.ui_fade_time)
@@ -165,7 +171,7 @@ func _start_slowmo() -> void:
 	_slowmo_token += 1
 	var token: int = _slowmo_token
 	Engine.time_scale = feedback.slowmo_scale
-	await get_tree().create_timer(feedback.slowmo_duration, true, false, true).timeout
+	await get_tree().create_timer(feedback.slowmo_duration, false, false, true).timeout
 	if token != _slowmo_token:
 		return
 	Engine.time_scale = 1.0
@@ -180,6 +186,7 @@ func _restart() -> void:
 	_camera.offset = Vector2.ZERO
 	_game_over.hide_result()
 	_hud.show_pulse_button(true)
+	_hud.show_pause_button(true)
 	_burst.clear()
 	_shockwaves.clear()
 	_popups.clear()
@@ -206,3 +213,19 @@ func _update_shake(delta: float) -> void:
 		return
 	var falloff: float = _shake_left / _shake_total
 	_camera.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake_strength * falloff
+
+func _pause_game() -> void:
+	if _dead or get_tree().paused:
+		return
+	_pause_overlay.show_overlay()
+	get_tree().paused = true
+
+
+func _resume_game() -> void:
+	_pause_overlay.hide_overlay()
+	get_tree().paused = false
+
+
+func _to_menu() -> void:
+	get_tree().paused = false
+	Transition.change_scene("res://scenes/Menu.tscn")

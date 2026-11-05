@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/PauseOverlay.gd" id="1_pause"]
+[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="2_theme"]
+
+[node name="PauseOverlay" type="CanvasLayer"]
+process_mode = 3
+layer = 6
+script = ExtResource("1_pause")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="ColorRect" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.164706, 0.266667, 0.364706, 0.88)
+
+[node name="TitleLabel" type="Label" parent="Root"]
+anchor_right = 1.0
+offset_top = 352.0
+offset_bottom = 460.0
+grow_horizontal = 2
+theme_type_variation = &"LargeLabel"
+text = "Paused"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="Root"]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 520.0
+offset_right = 100.0
+offset_bottom = 584.0
+grow_horizontal = 2
+text = "Resume"
+
+[node name="MenuButton" type="Button" parent="Root"]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 608.0
+offset_right = 100.0
+offset_bottom = 672.0
+grow_horizontal = 2
+text = "Menu"

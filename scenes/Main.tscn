@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Spawner.tscn" id="2_spawner"]
@@ -12,6 +12,7 @@
 [ext_resource type="Resource" path="res://assets/data/square_types.tres" id="10_types"]
 [ext_resource type="Script" path="res://scripts/Backdrop.gd" id="11_backdrop"]
 [ext_resource type="Script" path="res://scripts/Shockwaves.gd" id="12_shockwaves"]
+[ext_resource type="PackedScene" path="res://scenes/PauseOverlay.tscn" id="13_pause"]
 
 [sub_resource type="Resource" id="Resource_feedback"]
 script = ExtResource("8_feedback")
@@ -54,3 +55,5 @@ feedback = SubResource("Resource_feedback")
 
 [node name="GameOver" parent="." instance=ExtResource("7_game_over")]
 feedback = SubResource("Resource_feedback")
+
+[node name="PauseOverlay" parent="." instance=ExtResource("13_pause")]

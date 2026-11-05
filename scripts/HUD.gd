@@ -1,9 +1,10 @@
 class_name HUD
 extends CanvasLayer
 
-## Minimal in-run readout: score, combo multiplier, combo timer, best, pulse.
+## Minimal in-run readout: score, combo multiplier, combo timer, best, pause, pulse.
 
 signal pulse_pressed
+signal pause_pressed
 
 const BAR_WIDTH: float = 96.0
 const BAR_HEIGHT: float = 4.0
@@ -16,6 +17,7 @@ const BAR_Y: float = 108.0
 @onready var _multiplier_label: Label = $Root/MultiplierLabel
 @onready var _combo_bar: ColorRect = $Root/ComboBar
 @onready var _best_label: Label = $Root/BestLabel
+@onready var _pause_button: Button = $Root/PauseButton
 @onready var _pulse_button: Button = $Root/PulseButton
 @onready var _pulse_fill: ColorRect = $Root/PulseButton/CooldownFill
 
@@ -23,6 +25,7 @@ var _shown_score: int = -1
 var _shown_best: int = -1
 var _shown_combo: int = -1
 var _shown_pulse: float = -1.0
+var _bar_y: float = BAR_Y
 var _pop_tween: Tween
 var _intro_tween: Tween
 var _pulse_tween: Tween
@@ -31,10 +34,16 @@ var _pulse_tween: Tween
 func _ready() -> void:
 	if feedback == null:
 		feedback = FeedbackConfig.new()
+	_apply_safe_area()
+	_pause_button.pressed.connect(_on_pause_pressed)
 	_pulse_button.pressed.connect(_on_pulse_pressed)
+	_pause_button.button_down.connect(_pause_pop.bind(0.94))
+	_pause_button.button_up.connect(_pause_pop.bind(1.0))
 	_pulse_button.button_down.connect(_pulse_pop.bind(0.94))
 	_pulse_button.button_up.connect(_pulse_pop.bind(1.0))
 	_pulse_button.resized.connect(_sync_pulse_pivot)
+	_sync_pause_pivot()
+	_pause_button.resized.connect(_sync_pause_pivot)
 	_sync_pulse_pivot()
 	set_pulse_state(0.0)
 	play_intro()
@@ -62,6 +71,10 @@ func set_pulse_state(ratio: float) -> void:
 
 func show_pulse_button(shown: bool) -> void:
 	_pulse_button.visible = shown
+
+
+func show_pause_button(shown: bool) -> void:
+	_pause_button.visible = shown
 
 
 func _process(_delta: float) -> void:
@@ -94,6 +107,23 @@ func _refresh() -> void:
 	_update_bar()
 
 
+func _apply_safe_area() -> void:
+	var insets: Vector2 = UiMetrics.safe_insets(get_viewport().get_visible_rect().size)
+	if insets == Vector2.ZERO:
+		return
+	_bar_y = BAR_Y + insets.x
+	_score_label.offset_top += insets.x
+	_score_label.offset_bottom += insets.x
+	_multiplier_label.offset_top += insets.x
+	_multiplier_label.offset_bottom += insets.x
+	_best_label.offset_top += insets.x
+	_best_label.offset_bottom += insets.x
+	_pause_button.offset_top += insets.x
+	_pause_button.offset_bottom += insets.x
+	_pulse_button.offset_top -= insets.y
+	_pulse_button.offset_bottom -= insets.y
+
+
 func _update_bar() -> void:
 	if not _combo_bar.visible:
 		return
@@ -101,7 +131,12 @@ func _update_bar() -> void:
 	var width: float = BAR_WIDTH * ratio
 	var field_width: float = get_viewport().get_visible_rect().size.x
 	_combo_bar.size = Vector2(width, BAR_HEIGHT)
-	_combo_bar.position = Vector2((field_width - width) * 0.5, BAR_Y)
+	_combo_bar.position = Vector2((field_width - width) * 0.5, _bar_y)
+
+
+func _on_pause_pressed() -> void:
+	AudioManager.play_click()
+	pause_pressed.emit()
 
 
 func _on_pulse_pressed() -> void:
@@ -124,5 +159,16 @@ func _pulse_pop(target_scale: float) -> void:
 	_pulse_tween.tween_property(_pulse_button, "scale", Vector2.ONE * target_scale, feedback.button_pop_time)
 
 
+func _pause_pop(target_scale: float) -> void:
+	if _pulse_tween != null and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+	_pulse_tween = create_tween()
+	_pulse_tween.tween_property(_pause_button, "scale", Vector2.ONE * target_scale, feedback.button_pop_time)
+
+
 func _sync_pulse_pivot() -> void:
 	_pulse_button.pivot_offset = _pulse_button.size * 0.5
+
+
+func _sync_pause_pivot() -> void:
+	_pause_button.pivot_offset = _pause_button.size * 0.5
