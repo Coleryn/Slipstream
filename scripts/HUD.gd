@@ -1,7 +1,9 @@
 class_name HUD
 extends CanvasLayer
 
-## Minimal in-run readout: score, combo multiplier, combo timer, best.
+## Minimal in-run readout: score, combo multiplier, combo timer, best, pulse.
+
+signal pulse_pressed
 
 const BAR_WIDTH: float = 96.0
 const BAR_HEIGHT: float = 4.0
@@ -14,17 +16,27 @@ const BAR_Y: float = 108.0
 @onready var _multiplier_label: Label = $Root/MultiplierLabel
 @onready var _combo_bar: ColorRect = $Root/ComboBar
 @onready var _best_label: Label = $Root/BestLabel
+@onready var _pulse_button: Button = $Root/PulseButton
+@onready var _pulse_fill: ColorRect = $Root/PulseButton/CooldownFill
 
 var _shown_score: int = -1
 var _shown_best: int = -1
 var _shown_combo: int = -1
+var _shown_pulse: float = -1.0
 var _pop_tween: Tween
 var _intro_tween: Tween
+var _pulse_tween: Tween
 
 
 func _ready() -> void:
 	if feedback == null:
 		feedback = FeedbackConfig.new()
+	_pulse_button.pressed.connect(_on_pulse_pressed)
+	_pulse_button.button_down.connect(_pulse_pop.bind(0.94))
+	_pulse_button.button_up.connect(_pulse_pop.bind(1.0))
+	_pulse_button.resized.connect(_sync_pulse_pivot)
+	_sync_pulse_pivot()
+	set_pulse_state(0.0)
 	play_intro()
 
 
@@ -34,6 +46,22 @@ func play_intro() -> void:
 	_root.modulate = Color(1, 1, 1, 0)
 	_intro_tween = create_tween()
 	_intro_tween.tween_property(_root, "modulate", Color(1, 1, 1, 1), feedback.hud_fade_in_time)
+
+
+func set_pulse_state(ratio: float) -> void:
+	var clamped: float = clampf(ratio, 0.0, 1.0)
+	if is_equal_approx(clamped, _shown_pulse):
+		return
+	_shown_pulse = clamped
+	var height: float = _pulse_button.size.y * clamped
+	_pulse_fill.visible = clamped > 0.0
+	_pulse_fill.position = Vector2(0.0, _pulse_button.size.y - height)
+	_pulse_fill.size = Vector2(_pulse_button.size.x, height)
+	_pulse_button.modulate = Color(1, 1, 1, 1.0 - 0.45 * clamped)
+
+
+func show_pulse_button(shown: bool) -> void:
+	_pulse_button.visible = shown
 
 
 func _process(_delta: float) -> void:
@@ -76,9 +104,25 @@ func _update_bar() -> void:
 	_combo_bar.position = Vector2((field_width - width) * 0.5, BAR_Y)
 
 
+func _on_pulse_pressed() -> void:
+	AudioManager.play_click()
+	pulse_pressed.emit()
+
+
 func _pop() -> void:
 	if _pop_tween != null and _pop_tween.is_valid():
 		_pop_tween.kill()
 	_multiplier_label.scale = Vector2.ONE * feedback.combo_pop_scale
 	_pop_tween = create_tween()
 	_pop_tween.tween_property(_multiplier_label, "scale", Vector2.ONE, feedback.combo_pop_time)
+
+
+func _pulse_pop(target_scale: float) -> void:
+	if _pulse_tween != null and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+	_pulse_tween = create_tween()
+	_pulse_tween.tween_property(_pulse_button, "scale", Vector2.ONE * target_scale, feedback.button_pop_time)
+
+
+func _sync_pulse_pivot() -> void:
+	_pulse_button.pivot_offset = _pulse_button.size * 0.5

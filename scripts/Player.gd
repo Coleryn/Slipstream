@@ -32,6 +32,8 @@ var _death_tween: Tween
 var _intro: float = 1.0
 var _pulse_left: float = 0.0
 var shield_time: float = 0.0
+var pulse_cooldown_left: float = 0.0
+var _pulse_ring_left: float = 0.0
 var _shield_intro: float = 0.0
 var _trail_points: Array[Vector2] = []
 var _trail_ages: Array[float] = []
@@ -58,6 +60,9 @@ func _process(delta: float) -> void:
 	if shield_time > 0.0:
 		shield_time = maxf(shield_time - delta, 0.0)
 		_shield_intro = minf(_shield_intro + delta / maxf(feedback.shield_expand_time, 0.001), 1.0)
+	pulse_cooldown_left = maxf(pulse_cooldown_left - delta, 0.0)
+	if _pulse_ring_left > 0.0:
+		_pulse_ring_left = maxf(_pulse_ring_left - delta, 0.0)
 	_update_trail(delta)
 	queue_redraw()
 
@@ -82,6 +87,21 @@ func _draw() -> void:
 		var ring_color: Color = Color(Palette.PLAYER, feedback.shield_alpha * _shield_intro * flicker)
 		draw_arc(Vector2.ZERO, ring_radius, 0.0, TAU, 48, ring_color, feedback.shield_ring_width, true)
 
+	if _pulse_ring_left > 0.0:
+		var ring_t: float = 1.0 - _pulse_ring_left / maxf(feedback.pulse_ring_time, 0.001)
+		var pulse_radius: float = lerpf(radius, feedback.pulse_radius, ease(ring_t, 0.35))
+		var pulse_color: Color = Color(Palette.PLAYER, feedback.pulse_ring_alpha * (1.0 - ring_t))
+		draw_arc(Vector2.ZERO, pulse_radius, 0.0, TAU, 64, pulse_color, feedback.pulse_ring_width, true)
+
+
+func pulse_ready() -> bool:
+	return pulse_cooldown_left <= 0.0
+
+
+func start_pulse() -> void:
+	pulse_cooldown_left = maxf(feedback.pulse_cooldown, 0.0)
+	_pulse_ring_left = maxf(feedback.pulse_ring_time, 0.01)
+	queue_redraw()
 
 func pulse() -> void:
 	_pulse_left = maxf(feedback.near_miss_pulse_time, 0.01)
@@ -142,6 +162,8 @@ func reset() -> void:
 	_pulse_left = 0.0
 	shield_time = 0.0
 	_shield_intro = 0.0
+	pulse_cooldown_left = 0.0
+	_pulse_ring_left = 0.0
 	show()
 	set_process(true)
 	set_process_unhandled_input(true)

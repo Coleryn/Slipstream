@@ -26,6 +26,11 @@ var _drift_used: float = 0.0
 var _pickup: bool = false
 var _shield_duration: float = 0.0
 var _player_x: float = 0.0
+var _push_velocity: Vector2 = Vector2.ZERO
+var _push_left: float = 0.0
+var _push_total: float = 1.0
+var _shake_left: float = 0.0
+var _shake_strength: float = 0.0
 
 
 func _ready() -> void:
@@ -49,6 +54,10 @@ func activate(variant: SquareVariant, in_size: float, in_speed: float, in_fade_t
 	_crashing = false
 	_closest_gap = 1.0e20
 	_near_miss_done = false
+	_push_velocity = Vector2.ZERO
+	_push_left = 0.0
+	_push_total = 1.0
+	_shake_left = 0.0
 	show()
 	set_deferred("monitoring", true)
 	set_deferred("monitorable", true)
@@ -118,9 +127,26 @@ func mark_near_miss() -> void:
 	_near_miss_done = true
 
 
+func apply_push(direction: Vector2, strength: float, duration: float, shake: float) -> void:
+	if direction.length_squared() <= 0.0001:
+		direction = Vector2.UP
+	_push_velocity = direction.normalized() * strength
+	_push_total = maxf(duration, 0.01)
+	_push_left = _push_total
+	_shake_left = _push_total
+	_shake_strength = shake
+	set_process(true)
+	queue_redraw()
+
+
+func is_pushed() -> bool:
+	return _push_left > 0.0
+
+
 func _process(delta: float) -> void:
 	if _homing_rate > 0.0 and _drift_used < _max_drift:
 		_apply_homing(delta)
+	_apply_push(delta)
 	position.y += speed * delta
 	if _appear < 1.0:
 		_appear = minf(_appear + delta / maxf(_fade_in_time, 0.001), 1.0)
@@ -131,7 +157,21 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var half: float = size * 0.5
-	draw_rect(Rect2(Vector2(-half, -half), Vector2(size, size)), Color(_color, _appear))
+	var shake := Vector2.ZERO
+	if _shake_left > 0.0:
+		shake = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake_strength
+	draw_rect(Rect2(Vector2(-half, -half) + shake, Vector2(size, size)), Color(_color, _appear))
+
+
+func _apply_push(delta: float) -> void:
+	if _push_left <= 0.0:
+		return
+	_push_left = maxf(_push_left - delta, 0.0)
+	_shake_left = _push_left
+	position += _push_velocity * (_push_left / _push_total) * delta
+	position.x = clampf(position.x, size * 0.5, get_viewport_rect().size.x - size * 0.5)
+	position.y = maxf(position.y, -size)
+	queue_redraw()
 
 
 func _apply_homing(delta: float) -> void:

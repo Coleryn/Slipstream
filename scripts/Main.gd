@@ -41,6 +41,7 @@ func _ready() -> void:
 	_player.shield_blocked.connect(_on_shield_blocked)
 	_spawner.squares_crashed.connect(_on_squares_crashed)
 	_game_over.restart_pressed.connect(_restart)
+	_hud.pulse_pressed.connect(_try_pulse)
 	_hud.play_intro()
 
 
@@ -50,6 +51,7 @@ func _process(delta: float) -> void:
 		GameState.add_score(points_per_second * delta)
 		GameState.tick_combo(delta)
 		_check_near_miss()
+	_hud.set_pulse_state(_player.pulse_cooldown_left / maxf(feedback.pulse_cooldown, 0.001))
 	_update_shake(delta)
 
 
@@ -93,6 +95,29 @@ func _on_squares_crashed(first: Square, second: Square) -> void:
 	AudioManager.play_crash(multiplier)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if _dead:
+		return
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo and key.keycode == KEY_SPACE:
+		_try_pulse()
+
+
+func _try_pulse() -> void:
+	if _dead:
+		return
+	if not _player.pulse_ready():
+		return
+	_player.start_pulse()
+	var origin: Vector2 = _player.position
+	var radius: float = feedback.pulse_radius
+	for square in _spawner.active_squares():
+		var offset: Vector2 = square.position - origin
+		if offset.length() <= radius + square.size * 0.5:
+			square.apply_push(offset, feedback.pulse_push_strength, feedback.pulse_push_duration, feedback.pulse_square_shake)
+	AudioManager.play_pulse()
+
+
 func _on_shield_gained(pickup: Square) -> void:
 	_spawner.recycle_square(pickup)
 
@@ -111,6 +136,7 @@ func _on_player_died() -> void:
 	_death_token += 1
 	_slowmo_token += 1
 	_spawner.freeze_all()
+	_hud.show_pulse_button(false)
 	_player.play_death(feedback.player_shrink_time)
 	_burst.emit_burst(_player.position, Palette.PLAYER, feedback.death_particles, feedback.particle_speed, feedback.particle_size, feedback.particle_lifetime)
 	AudioManager.play_death()
@@ -150,6 +176,7 @@ func _restart() -> void:
 	_shake_left = 0.0
 	_camera.offset = Vector2.ZERO
 	_game_over.hide_result()
+	_hud.show_pulse_button(true)
 	_burst.clear()
 	_popups.clear()
 	GameState.reset()

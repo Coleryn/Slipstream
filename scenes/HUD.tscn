@@ -52,3 +52,21 @@ offset_bottom = 56.0
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
 text = "best 0"
 vertical_alignment = 1
+
+[node name="PulseButton" type="Button" parent="Root"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -96.0
+offset_top = -96.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "Pulse"
+
+[node name="CooldownFill" type="ColorRect" parent="Root/PulseButton"]
+mouse_filter = 2
+color = Color(0.164706, 0.266667, 0.364706, 0.55)

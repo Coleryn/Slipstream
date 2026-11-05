@@ -11,6 +11,7 @@ const PATHS: Dictionary = {
 	"death": "res://assets/audio/death.wav",
 	"click": "res://assets/audio/click.wav",
 	"near_miss": "res://assets/audio/near_miss.wav",
+	"pulse": "res://assets/audio/pulse.wav",
 }
 
 const TONES: Dictionary = {
@@ -18,6 +19,7 @@ const TONES: Dictionary = {
 	"death": {"frequency": 70.0, "duration": 0.35, "volume": 0.45},
 	"click": {"frequency": 880.0, "duration": 0.05, "volume": 0.25},
 	"near_miss": {"frequency": 1320.0, "duration": 0.05, "volume": 0.12},
+	"pulse": {"frequency": 520.0, "duration": 0.18, "volume": 0.3},
 }
 
 var placeholder_enabled: bool = true
@@ -57,6 +59,10 @@ func play_click() -> void:
 
 func play_near_miss() -> void:
 	_play("near_miss", 1.0)
+
+
+func play_pulse() -> void:
+	_play("pulse", 1.0)
 
 
 func _play(kind: String, pitch: float) -> void:
