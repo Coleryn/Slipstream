@@ -8,6 +8,7 @@ signal restart_pressed
 @onready var _root: Control = $Root
 @onready var _score_label: Label = $Root/ScoreLabel
 @onready var _best_label: Label = $Root/BestLabel
+@onready var _new_best_label: Label = $Root/NewBestLabel
 @onready var _restart_button: Button = $Root/RestartButton
 
 var _tween: Tween
@@ -23,9 +24,10 @@ func _ready() -> void:
 	hide_result()
 
 
-func show_result(score: int, best: int, fade_time: float) -> void:
+func show_result(score: int, best: int, new_best: bool, fade_time: float) -> void:
 	_score_label.text = str(score)
 	_best_label.text = "best %d" % best
+	_new_best_label.visible = new_best
 	_root.modulate = Color(1, 1, 1, 0)
 	visible = true
 	if _tween != null and _tween.is_valid():
@@ -39,6 +41,7 @@ func hide_result() -> void:
 		_tween.kill()
 	_root.modulate = Color(1, 1, 1, 1)
 	_restart_button.scale = Vector2.ONE
+	_new_best_label.visible = false
 	visible = false
 
 

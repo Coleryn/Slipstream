@@ -1,15 +1,16 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Spawner.tscn" id="2_spawner"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="3_player"]
 [ext_resource type="Script" path="res://scripts/Burst.gd" id="4_burst"]
 [ext_resource type="Script" path="res://scripts/Popups.gd" id="5_popups"]
-[ext_resource type="PackedScene" path="res://scenes/GameOver.tscn" id="6_game_over"]
-[ext_resource type="Script" path="res://scripts/FeedbackConfig.gd" id="7_feedback"]
+[ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/GameOver.tscn" id="7_game_over"]
+[ext_resource type="Script" path="res://scripts/FeedbackConfig.gd" id="8_feedback"]
 
 [sub_resource type="Resource" id="Resource_feedback"]
-script = ExtResource("7_feedback")
+script = ExtResource("8_feedback")
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -28,4 +29,6 @@ script = ExtResource("4_burst")
 [node name="Popups" type="Node2D" parent="."]
 script = ExtResource("5_popups")
 
-[node name="GameOver" parent="." instance=ExtResource("6_game_over")]
+[node name="HUD" parent="." instance=ExtResource("6_hud")]
+
+[node name="GameOver" parent="." instance=ExtResource("7_game_over")]
