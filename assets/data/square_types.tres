@@ -1,0 +1,68 @@
+[gd_resource type="Resource" script_class="SquareTypeConfig" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/SquareTypeConfig.gd" id="1_config"]
+[ext_resource type="Script" path="res://scripts/SquareVariant.gd" id="2_variant"]
+
+[sub_resource type="Resource" id="Variant_normal"]
+script = ExtResource("2_variant")
+type = 0
+color = Color(0.560784, 0.639216, 0.709804, 1)
+size_min = 28.0
+size_max = 52.0
+speed_multiplier = 1.0
+point_multiplier = 1.0
+homing_rate = 0.0
+max_drift = 0.0
+is_pickup = false
+shield_duration = 0.0
+
+[sub_resource type="Resource" id="Variant_red"]
+script = ExtResource("2_variant")
+type = 1
+color = Color(0.909804, 0.364706, 0.364706, 1)
+size_min = 30.0
+size_max = 46.0
+speed_multiplier = 1.45
+point_multiplier = 1.0
+homing_rate = 30.0
+max_drift = 80.0
+is_pickup = false
+shield_duration = 0.0
+
+[sub_resource type="Resource" id="Variant_big"]
+script = ExtResource("2_variant")
+type = 3
+color = Color(0.560784, 0.639216, 0.709804, 1)
+size_min = 56.0
+size_max = 68.0
+speed_multiplier = 0.6
+point_multiplier = 3.0
+homing_rate = 0.0
+max_drift = 0.0
+is_pickup = false
+shield_duration = 0.0
+
+[sub_resource type="Resource" id="Variant_gold"]
+script = ExtResource("2_variant")
+type = 2
+color = Color(0.94902, 0.788235, 0.298039, 1)
+size_min = 26.0
+size_max = 34.0
+speed_multiplier = 1.0
+point_multiplier = 1.0
+homing_rate = 0.0
+max_drift = 0.0
+is_pickup = true
+shield_duration = 4.0
+
+[resource]
+script = ExtResource("1_config")
+normal = SubResource("Variant_normal")
+red = SubResource("Variant_red")
+big = SubResource("Variant_big")
+gold = SubResource("Variant_gold")
+weight_normal = 70.0
+weight_red = 10.0
+weight_red_at_max = 30.0
+weight_big = 12.0
+weight_gold = 4.0

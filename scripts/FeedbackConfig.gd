@@ -23,6 +23,14 @@ extends Resource
 @export_range(0.02, 0.6, 0.01) var player_shrink_time: float = 0.14
 @export_range(0.0, 0.5, 0.01) var freeze_frame: float = 0.1
 
+@export_group("Shield")
+@export_range(0.05, 0.6, 0.01) var shield_expand_time: float = 0.2
+@export_range(1.0, 6.0, 0.5) var shield_ring_gap: float = 6.0
+@export_range(1.0, 8.0, 0.5) var shield_ring_width: float = 2.0
+@export_range(0.0, 1.0, 0.05) var shield_alpha: float = 0.8
+@export_range(0.2, 3.0, 0.1) var shield_flicker_time: float = 1.0
+@export_range(4.0, 40.0, 1.0) var shield_flicker_speed: float = 22.0
+
 @export_group("Player trail")
 @export_range(0.05, 1.0, 0.01) var trail_lifetime: float = 0.22
 @export_range(0.01, 0.2, 0.01) var trail_interval: float = 0.035

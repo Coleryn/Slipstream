@@ -37,6 +37,8 @@ func _ready() -> void:
 	AudioManager.placeholder_enabled = feedback.placeholder_audio
 	GameState.reset()
 	_player.died.connect(_on_player_died)
+	_player.shield_gained.connect(_on_shield_gained)
+	_player.shield_blocked.connect(_on_shield_blocked)
 	_spawner.squares_crashed.connect(_on_squares_crashed)
 	_game_over.restart_pressed.connect(_restart)
 	_hud.play_intro()
@@ -58,6 +60,8 @@ func _draw() -> void:
 func _check_near_miss() -> void:
 	var player_radius: float = _player.radius
 	for square in _spawner.active_squares():
+		if square.is_pickup():
+			continue
 		square.track_player(_player.position, player_radius)
 		if square.near_miss_done():
 			continue
@@ -78,7 +82,8 @@ func _on_squares_crashed(first: Square, second: Square) -> void:
 	var second_position: Vector2 = second.position
 	var impact: Vector2 = (first_position + second_position) * 0.5
 	var multiplier: int = GameState.register_crash(combo_window, combo_cap)
-	var awarded: int = crash_bonus * multiplier
+	var points: float = maxf(first.point_multiplier(), second.point_multiplier())
+	var awarded: int = int(round(float(crash_bonus) * float(multiplier) * points))
 	GameState.add_score(float(awarded))
 	_burst.emit_burst(first_position, first_color, feedback.crash_particles, feedback.crash_particle_speed, feedback.particle_size, feedback.particle_lifetime)
 	_burst.emit_burst(second_position, second_color, feedback.crash_particles, feedback.crash_particle_speed, feedback.particle_size, feedback.particle_lifetime)
@@ -86,6 +91,17 @@ func _on_squares_crashed(first: Square, second: Square) -> void:
 	_start_shake(feedback.crash_shake_duration, feedback.crash_shake_strength)
 	_start_slowmo()
 	AudioManager.play_crash(multiplier)
+
+
+func _on_shield_gained(pickup: Square) -> void:
+	_spawner.recycle_square(pickup)
+
+
+func _on_shield_blocked(square: Square) -> void:
+	_burst.emit_burst(square.position, square.get_draw_color(), feedback.crash_particles, feedback.crash_particle_speed, feedback.particle_size, feedback.particle_lifetime)
+	_spawner.recycle_square(square)
+	_start_shake(feedback.crash_shake_duration, feedback.crash_shake_strength)
+	AudioManager.play_crash(GameState.combo)
 
 
 func _on_player_died() -> void:

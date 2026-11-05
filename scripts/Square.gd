@@ -6,7 +6,7 @@ extends Area2D
 signal escaped(square: Square)
 signal crashed(first: Square, second: Square)
 
-enum Type { NORMAL, FAST, GOLD }
+enum Type { NORMAL, FAST, GOLD, BIG }
 
 @export var size: float = 40.0
 @export var speed: float = 180.0
@@ -19,17 +19,31 @@ var _fade_in_time: float = 0.25
 var _crashing: bool = false
 var _closest_gap: float = 1.0e20
 var _near_miss_done: bool = false
+var _point_multiplier: float = 1.0
+var _homing_rate: float = 0.0
+var _max_drift: float = 0.0
+var _drift_used: float = 0.0
+var _pickup: bool = false
+var _shield_duration: float = 0.0
+var _player_x: float = 0.0
 
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 
 
-func activate(in_size: float, in_speed: float, in_type: Type, in_color: Color, in_fade_time: float) -> void:
+func activate(variant: SquareVariant, in_size: float, in_speed: float, in_fade_time: float) -> void:
+	type = variant.type
+	_color = variant.color
+	_point_multiplier = variant.point_multiplier
+	_homing_rate = variant.homing_rate
+	_max_drift = variant.max_drift
+	_pickup = variant.is_pickup
+	_shield_duration = variant.shield_duration
+	_drift_used = 0.0
+	_player_x = position.x
 	size = in_size
 	speed = in_speed
-	type = in_type
-	_color = in_color
 	_fade_in_time = in_fade_time
 	_appear = 0.0
 	_crashing = false
@@ -58,11 +72,28 @@ func begin_crash() -> void:
 	_crashing = true
 
 
+func appear_ratio() -> float:
+	return _appear
+
+
+func is_pickup() -> bool:
+	return _pickup
+
+
+func shield_duration() -> float:
+	return _shield_duration
+
+
+func point_multiplier() -> float:
+	return _point_multiplier
+
+
 func get_draw_color() -> Color:
 	return _color
 
 
 func track_player(player_position: Vector2, player_radius: float) -> float:
+	_player_x = player_position.x
 	var nearest := Vector2(
 		clampf(player_position.x, position.x - size * 0.5, position.x + size * 0.5),
 		clampf(player_position.y, position.y - size * 0.5, position.y + size * 0.5))
@@ -88,6 +119,8 @@ func mark_near_miss() -> void:
 
 
 func _process(delta: float) -> void:
+	if _homing_rate > 0.0 and _drift_used < _max_drift:
+		_apply_homing(delta)
 	position.y += speed * delta
 	if _appear < 1.0:
 		_appear = minf(_appear + delta / maxf(_fade_in_time, 0.001), 1.0)
@@ -99,6 +132,15 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var half: float = size * 0.5
 	draw_rect(Rect2(Vector2(-half, -half), Vector2(size, size)), Color(_color, _appear))
+
+
+func _apply_homing(delta: float) -> void:
+	var remaining: float = _max_drift - _drift_used
+	var step: float = clampf(_player_x - position.x, -_homing_rate * delta, _homing_rate * delta)
+	step = clampf(step, -remaining, remaining)
+	position.x += step
+	_drift_used += absf(step)
+	position.x = clampf(position.x, size * 0.5, get_viewport_rect().size.x - size * 0.5)
 
 
 func _on_area_entered(area: Area2D) -> void:
