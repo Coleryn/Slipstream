@@ -3,6 +3,8 @@ extends Area2D
 
 ## The white circle. Fixed Y near the bottom, dragged left/right on X only.
 
+signal died
+
 @export_group("Shape")
 @export var radius: float = 16.0:
 	set(value):
@@ -27,19 +29,21 @@ extends Area2D
 var _target_x: float = 0.0
 var _dragging: bool = false
 var _touch_index: int = -1
+var _dead: bool = false
+var _death_tween: Tween
 var _trail_points: Array[Vector2] = []
 var _trail_ages: Array[float] = []
 var _trail_timer: float = 0.0
 
 
 func _ready() -> void:
-	var field: Vector2 = get_viewport_rect().size
-	position = Vector2(field.x * 0.5, field.y - bottom_margin)
-	_target_x = position.x
-	_sync_hitbox()
+	area_entered.connect(_on_area_entered)
+	reset()
 
 
 func _process(delta: float) -> void:
+	if _dead:
+		return
 	if _dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_dragging = false
 	position.x = lerpf(position.x, _target_x, 1.0 - exp(-smoothing * delta))
@@ -57,6 +61,9 @@ func _draw() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _dead:
+		return
+
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
 		if touch.pressed and _touch_index == -1:
@@ -81,6 +88,46 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _dragging:
 		var motion := event as InputEventMouseMotion
 		_drag(motion.relative.x)
+
+
+func play_death(duration: float) -> void:
+	if _death_tween != null and _death_tween.is_valid():
+		_death_tween.kill()
+	_death_tween = create_tween()
+	_death_tween.tween_property(self, "scale", Vector2.ZERO, maxf(duration, 0.01)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_death_tween.tween_callback(hide)
+
+
+func reset() -> void:
+	if _death_tween != null and _death_tween.is_valid():
+		_death_tween.kill()
+	_dead = false
+	_dragging = false
+	_touch_index = -1
+	scale = Vector2.ONE
+	show()
+	set_process(true)
+	set_process_unhandled_input(true)
+	_trail_points.clear()
+	_trail_ages.clear()
+	_trail_timer = 0.0
+	var field: Vector2 = get_viewport_rect().size
+	position = Vector2(field.x * 0.5, field.y - bottom_margin)
+	_target_x = position.x
+	_sync_hitbox()
+	queue_redraw()
+
+
+func _on_area_entered(area: Area2D) -> void:
+	if _dead:
+		return
+	var square := area as Square
+	if square == null or not square.visible:
+		return
+	_dead = true
+	_dragging = false
+	set_process_unhandled_input(false)
+	died.emit()
 
 
 func _drag(relative_x: float) -> void:

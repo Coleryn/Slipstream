@@ -1,12 +1,27 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Spawner.tscn" id="2_spawner"]
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/Burst.gd" id="4_burst"]
+[ext_resource type="PackedScene" path="res://scenes/GameOver.tscn" id="5_game_over"]
+[ext_resource type="Script" path="res://scripts/FeedbackConfig.gd" id="6_feedback"]
+
+[sub_resource type="Resource" id="Resource_feedback"]
+script = ExtResource("6_feedback")
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
+feedback = SubResource("Resource_feedback")
+
+[node name="Camera" type="Camera2D" parent="."]
+position = Vector2(270, 480)
 
 [node name="Spawner" parent="." instance=ExtResource("2_spawner")]
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
+
+[node name="Burst" type="Node2D" parent="."]
+script = ExtResource("4_burst")
+
+[node name="GameOver" parent="." instance=ExtResource("5_game_over")]

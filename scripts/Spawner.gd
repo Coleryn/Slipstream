@@ -1,3 +1,4 @@
+class_name Spawner
 extends Node2D
 
 ## Spawns squares from a pool, spread across vertical lanes.
@@ -32,6 +33,24 @@ func _process(delta: float) -> void:
 		return
 	_timer += _next_interval()
 	_spawn()
+
+
+func freeze_all() -> void:
+	set_process(false)
+	for node in get_children():
+		var square := node as Square
+		if square != null and square.visible:
+			square.set_process(false)
+
+
+func reset() -> void:
+	for node in get_children():
+		var square := node as Square
+		if square != null and square.visible:
+			square.deactivate()
+			_pool.push_back(square)
+	_timer = _next_interval()
+	set_process(true)
 
 
 func _spawn() -> void:

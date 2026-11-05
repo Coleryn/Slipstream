@@ -1,0 +1,49 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/GameOver.gd" id="1_script"]
+[ext_resource type="Theme" path="res://assets/ui/theme.tres" id="2_theme"]
+[ext_resource type="FontFile" path="res://assets/fonts/Nunito-Bold.ttf" id="3_bold"]
+
+[node name="GameOver" type="CanvasLayer"]
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="ScoreLabel" type="Label" parent="Root"]
+anchor_right = 1.0
+offset_top = 328.0
+offset_bottom = 456.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 96
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BestLabel" type="Label" parent="Root"]
+anchor_right = 1.0
+offset_top = 472.0
+offset_bottom = 504.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+text = "best 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RestartButton" type="Button" parent="Root"]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 560.0
+offset_right = 100.0
+offset_bottom = 624.0
+grow_horizontal = 2
+custom_minimum_size = Vector2(200, 64)
+text = "Restart"

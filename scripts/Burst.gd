@@ -1,0 +1,68 @@
+class_name Burst
+extends Node2D
+
+## Small square particles. One instance, reused by every burst.
+
+var _positions: Array[Vector2] = []
+var _velocities: Array[Vector2] = []
+var _sizes: Array[float] = []
+var _colors: Array[Color] = []
+var _ages: Array[float] = []
+var _lives: Array[float] = []
+
+
+func emit_burst(origin: Vector2, color: Color, count: int, speed: float, size: float, lifetime: float) -> void:
+	for i in maxi(count, 0):
+		var direction: Vector2 = Vector2.RIGHT.rotated(randf() * TAU)
+		_positions.append(origin - global_position)
+		_velocities.append(direction * speed * randf_range(0.35, 1.0))
+		_sizes.append(size * randf_range(0.6, 1.2))
+		_colors.append(color)
+		_ages.append(0.0)
+		_lives.append(maxf(lifetime, 0.01))
+	set_process(true)
+	queue_redraw()
+
+
+func clear() -> void:
+	_positions.clear()
+	_velocities.clear()
+	_sizes.clear()
+	_colors.clear()
+	_ages.clear()
+	_lives.clear()
+	set_process(false)
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	if _ages.is_empty():
+		set_process(false)
+		queue_redraw()
+		return
+	var i: int = _ages.size() - 1
+	while i >= 0:
+		_ages[i] += delta
+		if _ages[i] >= _lives[i]:
+			_remove_at(i)
+		else:
+			_velocities[i] = _velocities[i].lerp(Vector2.ZERO, minf(delta * 5.0, 1.0))
+			_positions[i] += _velocities[i] * delta
+		i -= 1
+	queue_redraw()
+
+
+func _draw() -> void:
+	for i in _positions.size():
+		var t: float = clampf(_ages[i] / _lives[i], 0.0, 1.0)
+		var side: float = _sizes[i] * (1.0 - 0.5 * t)
+		draw_rect(Rect2(_positions[i] - Vector2(side, side) * 0.5, Vector2(side, side)), Color(_colors[i], 1.0 - t))
+
+
+func _remove_at(index: int) -> void:
+	_positions.remove_at(index)
+	_velocities.remove_at(index)
+	_sizes.remove_at(index)
+	_colors.remove_at(index)
+	_ages.remove_at(index)
+	_lives.remove_at(index)

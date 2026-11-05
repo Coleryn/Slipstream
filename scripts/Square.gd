@@ -24,6 +24,7 @@ func activate(in_size: float, in_speed: float, in_type: Type, in_color: Color) -
 	_color = in_color
 	_appear = 0.0
 	show()
+	set_deferred("monitorable", true)
 	set_process(true)
 	_sync_shape()
 	queue_redraw()
@@ -32,6 +33,7 @@ func activate(in_size: float, in_speed: float, in_type: Type, in_color: Color) -
 func deactivate() -> void:
 	hide()
 	set_process(false)
+	set_deferred("monitorable", false)
 
 
 func _process(delta: float) -> void:
