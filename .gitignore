@@ -5,7 +5,9 @@
 # Godot-specific ignores
 .import/
 export.cfg
-export_presets.cfg
+
+# Local export output (playable builds are attached to the GitHub Release)
+/build/
 
 # Imported translations (automatically generated from CSV files)
 *.translation
