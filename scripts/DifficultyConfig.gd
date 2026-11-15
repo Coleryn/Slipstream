@@ -8,10 +8,13 @@ extends Resource
 @export var speed_growth: float = 20.0
 @export var max_speed: float = 460.0
 
-@export_group("Spawn interval")
-@export var interval_start: float = 0.55
-@export var interval_shrink: float = 0.35
-@export var interval_min: float = 0.3
+@export_group("Spawn density")
+## Spawning is distance-based: interval = spacing / current speed, so density
+## keeps rising even after the speed cap instead of flattening out.
+@export var spawn_spacing_start: float = 120.0
+@export var spacing_shrink: float = 0.03
+@export var spacing_min: float = 70.0
+@export var interval_floor: float = 0.12
 
 @export_group("Square size")
 @export var size_growth: float = 0.25

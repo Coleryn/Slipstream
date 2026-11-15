@@ -14,6 +14,9 @@ extends Resource
 @export_group("Slow motion")
 @export_range(0.05, 1.0, 0.01) var slowmo_scale: float = 0.35
 @export_range(0.05, 1.0, 0.01) var slowmo_duration: float = 0.25
+@export_range(0.05, 1.0, 0.01) var slowmo_minor_scale: float = 0.7
+@export_range(0.05, 1.0, 0.01) var slowmo_minor_duration: float = 0.12
+@export_range(1, 8, 1) var slowmo_major_combo: int = 4
 
 @export_group("Player")
 @export_range(0.0, 0.5, 0.01) var player_fade_in_time: float = 0.18
@@ -32,10 +35,11 @@ extends Resource
 @export_range(4.0, 40.0, 1.0) var shield_flicker_speed: float = 22.0
 
 @export_group("Pulse")
-@export_range(40.0, 400.0, 10.0) var pulse_radius: float = 150.0
-@export_range(20.0, 600.0, 10.0) var pulse_push_strength: float = 320.0
-@export_range(0.05, 0.6, 0.01) var pulse_push_duration: float = 0.25
-@export_range(0.0, 20.0, 0.5) var pulse_cooldown: float = 8.0
+@export_range(40.0, 400.0, 10.0) var pulse_radius: float = 190.0
+@export_range(20.0, 1500.0, 10.0) var pulse_push_strength: float = 1000.0
+@export_range(0.05, 0.6, 0.01) var pulse_push_duration: float = 0.4
+@export_range(0.0, 20.0, 0.5) var pulse_cooldown: float = 6.0
+@export_range(0.2, 3.0, 0.1) var pulse_credit_time: float = 1.0
 @export_range(0.05, 0.5, 0.01) var pulse_ring_time: float = 0.28
 @export_range(1.0, 6.0, 0.5) var pulse_ring_width: float = 2.0
 @export_range(0.0, 1.0, 0.05) var pulse_ring_alpha: float = 0.85

@@ -14,6 +14,10 @@ const SQUARE_SCENE: PackedScene = preload("res://scenes/Square.tscn")
 @export_group("Lanes")
 @export_range(1, 12, 1) var lane_count: int = 5
 
+## A lane is skipped for new spawns while it still has a square this close to
+## the top, so spawns do not pile into each other before the player can see them.
+@export_range(0.0, 600.0, 10.0) var lane_clear_height: float = 260.0
+
 @export_group("Squares")
 @export_range(20.0, 600.0, 5.0) var min_speed: float = 110.0
 @export_range(20.0, 900.0, 5.0) var max_speed: float = 240.0
@@ -21,21 +25,30 @@ const SQUARE_SCENE: PackedScene = preload("res://scenes/Square.tscn")
 
 @export_group("Timing")
 @export_range(0.0, 1.0, 0.01) var interval_variation: float = 0.2
+@export_range(0.01, 0.5, 0.01) var wall_check_interval: float = 0.05
 
 @export_group("Crash setup")
 @export_range(0.0, 1.0, 0.01) var crash_chance: float = 0.25
 @export_range(0.2, 10.0, 0.1) var crash_max_gap: float = 3.0
 @export_range(20.0, 400.0, 5.0) var crash_speed_delta: float = 130.0
-@export_range(40.0, 400.0, 5.0) var crash_gap: float = 150.0
+## Where on screen (0 = top, 1 = bottom) a planned crash should happen.
+@export_range(0.1, 0.8, 0.01) var crash_y_min_ratio: float = 0.35
+@export_range(0.1, 0.8, 0.01) var crash_y_max_ratio: float = 0.6
+## Red chasers in a crash pair home less, so a crash is likely but still
+## depends on where the player stands (under the slow square's lane = sure hit).
+@export_range(0.0, 1.0, 0.05) var pair_homing_scale: float = 0.35
 
 var _pool: Array[Square] = []
 var _timer: float = 0.0
 var _interval_now: float = 0.0
 var _crash_clock: float = 0.0
 var _stats_clock: float = 0.0
+var _wall_clock: float = 0.0
+var _pair_red: SquareVariant
 var _telegraphs: Array[Dictionary] = []
 var wall_nudges: int = 0
 var wall_removals: int = 0
+var wall_tolerated: int = 0
 
 
 func _ready() -> void:
@@ -45,6 +58,7 @@ func _ready() -> void:
 		feedback = FeedbackConfig.new()
 	if types == null:
 		types = SquareTypeConfig.new()
+	_pair_red = _make_pair_red()
 	_interval_now = _next_interval()
 	_timer = _interval_now
 
@@ -55,9 +69,12 @@ func _process(delta: float) -> void:
 		_stats_clock += delta
 		if _stats_clock >= 1.0:
 			_stats_clock -= 1.0
-			print("t=%.1fs speed=%.0f interval=%.2f walls=%d/%d" % [GameState.time, GameState.speed, _interval_now, wall_nudges, wall_removals])
+			print("t=%.1fs speed=%.0f interval=%.2f walls=%d/%d/%d" % [GameState.time, GameState.speed, _interval_now, wall_nudges, wall_removals, wall_tolerated])
 	_update_telegraphs(delta)
-	_enforce_walls()
+	_wall_clock += delta
+	if _wall_clock >= wall_check_interval:
+		_wall_clock = 0.0
+		_enforce_walls()
 	_timer -= delta
 	if _timer > 0.0:
 		return
@@ -101,6 +118,7 @@ func reset() -> void:
 	_timer = _interval_now
 	_crash_clock = 0.0
 	_stats_clock = 0.0
+	_wall_clock = 0.0
 	set_process(true)
 
 func _update_telegraphs(delta: float) -> void:
@@ -137,13 +155,36 @@ func _draw() -> void:
 
 func _spawn() -> void:
 	var lane_width: float = get_viewport_rect().size.x / float(lane_count)
-	var lane: int = randi_range(0, lane_count - 1)
+	var lane: int = _pick_lane(lane_width)
 	var x: float = lane_width * (float(lane) + 0.5)
 	var wants_crash: bool = randf() < crash_chance or _crash_clock >= crash_max_gap
 	if wants_crash and _spawn_crash_pair(x):
 		_crash_clock = 0.0
 		return
 	_spawn_single(x)
+
+
+func _pick_lane(lane_width: float) -> int:
+	var open: Array[int] = []
+	for lane in lane_count:
+		if not _lane_busy(lane_width * (float(lane) + 0.5), lane_width):
+			open.append(lane)
+	if open.is_empty():
+		return randi_range(0, lane_count - 1)
+	return open[randi() % open.size()]
+
+
+func _lane_busy(x: float, lane_width: float) -> bool:
+	for node in get_children():
+		var square := node as Square
+		if square == null or not square.visible:
+			continue
+		if absf(square.position.x - x) < lane_width * 0.5 and square.position.y - square.size * 0.5 < lane_clear_height:
+			return true
+	for telegraph in _telegraphs:
+		if absf(float(telegraph["x"]) - x) < lane_width * 0.5:
+			return true
+	return false
 
 
 func _spawn_single(x: float) -> void:
@@ -165,33 +206,59 @@ func _spawn_single(x: float) -> void:
 	_try_place(x, y, square_size, square_speed, variant)
 
 
+func _make_pair_red() -> SquareVariant:
+	var variant: SquareVariant = types.red.duplicate() as SquareVariant
+	variant.homing_rate *= pair_homing_scale
+	variant.max_drift *= pair_homing_scale
+	return variant
+
+
+## A slow square spawns now; a red chaser is telegraphed in the same lane and
+## timed so the two meet around crash_y_*_ratio of the screen height, which is
+## close enough to the player to react to and to bait.
 func _spawn_crash_pair(x: float) -> bool:
 	var scale: float = _difficulty_scale()
 	var target: SquareVariant = types.normal
-	var chaser: SquareVariant = types.red
 	var slow_size: float = _random_size(target)
-	var fast_size: float = _random_size(chaser)
+	var fast_size: float = _random_size(_pair_red)
 	var speed_lo: float = minf(min_speed, max_speed)
 	var speed_hi: float = maxf(min_speed, max_speed)
 	var slow_speed: float = randf_range(speed_lo, maxf(speed_lo, speed_hi * 0.6)) * scale
+	var fast_speed: float = slow_speed + crash_speed_delta * scale
 	var slow_y: float = -slow_size * 0.5 - spawn_margin
-	if not _try_place(x, slow_y, slow_size, slow_speed, target):
+	var slow: Square = _try_place(x, slow_y, slow_size, slow_speed, target)
+	if slow == null:
 		return false
-	var fast_y: float = slow_y - crash_gap - fast_size * 0.5
-	_try_place(x, fast_y, fast_size, slow_speed + crash_speed_delta * scale, chaser)
+	var field_height: float = get_viewport_rect().size.y
+	var ratio_lo: float = minf(crash_y_min_ratio, crash_y_max_ratio)
+	var ratio_hi: float = maxf(crash_y_min_ratio, crash_y_max_ratio)
+	var meet_y: float = field_height * randf_range(ratio_lo, ratio_hi)
+	var fast_y: float = -fast_size * 0.5 - spawn_margin
+	var slow_time: float = (meet_y - slow_y) / maxf(slow_speed, 1.0)
+	var fast_time: float = (meet_y - fast_y) / maxf(fast_speed, 1.0)
+	var delay: float = maxf(slow_time - fast_time, feedback.telegraph_time)
+	_telegraphs.append({
+		"x": slow.position.x,
+		"variant": _pair_red,
+		"size": fast_size,
+		"speed": fast_speed,
+		"time_left": delay,
+		"fade_left": 0.0,
+		"fired": false,
+	})
 	return true
 
 
-func _try_place(x: float, y: float, square_size: float, square_speed: float, variant: SquareVariant) -> bool:
+func _try_place(x: float, y: float, square_size: float, square_speed: float, variant: SquareVariant) -> Square:
 	var safe_x: float = _fair_x(x, y, square_size)
 	if is_nan(safe_x):
-		return false
+		return null
 	var square: Square = _acquire()
 	if square == null:
-		return false
+		return null
 	square.position = Vector2(safe_x, y)
 	square.activate(variant, square_size, square_speed, feedback.square_fade_in_time)
-	return true
+	return square
 
 
 func _fair_x(x: float, y: float, square_size: float, exclude: Square = null) -> float:
@@ -213,18 +280,23 @@ func _fair_x(x: float, y: float, square_size: float, exclude: Square = null) -> 
 		return NAN
 	return best.x + square_size * 0.5
 
+## Keeps a passable gap in every horizontal band. Only squares that are still
+## fully above the screen are moved or removed, so nothing ever pops on screen.
 func _enforce_walls() -> void:
 	var required: float = difficulty.player_diameter + difficulty.gap_margin
 	var info: Dictionary = _worst_band()
 	if float(info["gap"]) >= required:
 		return
 	var band: Array = info["band"]
-	if band.is_empty():
-		return
-	var newest: Square = band[0]
+	var newest: Square = null
 	for square in band:
-		if square.appear_ratio() < newest.appear_ratio():
+		if not _is_offscreen(square):
+			continue
+		if newest == null or square.appear_ratio() < newest.appear_ratio():
 			newest = square
+	if newest == null:
+		wall_tolerated += 1
+		return
 	var safe_x: float = _fair_x(newest.position.x, newest.position.y, newest.size, newest)
 	var moved: bool = false
 	if not is_nan(safe_x) and absf(safe_x - newest.position.x) <= difficulty.max_wall_nudge:
@@ -238,6 +310,10 @@ func _enforce_walls() -> void:
 	else:
 		wall_removals += 1
 		_recycle(newest)
+
+
+func _is_offscreen(square: Square) -> bool:
+	return square.position.y + square.size * 0.5 < 0.0
 
 
 func _worst_band() -> Dictionary:
@@ -322,8 +398,10 @@ func _random_speed(variant: SquareVariant) -> float:
 
 func _next_interval() -> float:
 	var t: float = maxf(GameState.time, 0.0)
-	var curve: float = difficulty.interval_start / (1.0 + difficulty.interval_shrink * sqrt(t))
-	var interval: float = maxf(curve, difficulty.interval_min)
+	var speed: float = maxf(GameState.speed, difficulty.base_speed)
+	var spacing: float = difficulty.spawn_spacing_start / (1.0 + difficulty.spacing_shrink * sqrt(t))
+	spacing = maxf(spacing, difficulty.spacing_min)
+	var interval: float = maxf(spacing / speed, difficulty.interval_floor)
 	var jitter: float = interval * interval_variation
 	return maxf(interval + randf_range(-jitter, jitter), 0.05)
 
@@ -346,6 +424,8 @@ func _on_square_crashed(first: Square, second: Square) -> void:
 	if first.is_crashing() or second.is_crashing():
 		return
 	if not first.visible or not second.visible:
+		return
+	if first.is_pickup() or second.is_pickup():
 		return
 	first.begin_crash()
 	second.begin_crash()

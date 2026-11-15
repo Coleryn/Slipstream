@@ -29,11 +29,15 @@ var _bar_y: float = BAR_Y
 var _pop_tween: Tween
 var _intro_tween: Tween
 var _pulse_tween: Tween
+var _pause_tween: Tween
 
 
 func _ready() -> void:
 	if feedback == null:
 		feedback = FeedbackConfig.new()
+	_combo_bar.color = Color(Palette.TEXT, 0.8)
+	_best_label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	_pulse_fill.color = Color(Palette.BACKGROUND, 0.55)
 	_apply_safe_area()
 	_pause_button.pressed.connect(_on_pause_pressed)
 	_pulse_button.pressed.connect(_on_pulse_pressed)
@@ -160,10 +164,10 @@ func _pulse_pop(target_scale: float) -> void:
 
 
 func _pause_pop(target_scale: float) -> void:
-	if _pulse_tween != null and _pulse_tween.is_valid():
-		_pulse_tween.kill()
-	_pulse_tween = create_tween()
-	_pulse_tween.tween_property(_pause_button, "scale", Vector2.ONE * target_scale, feedback.button_pop_time)
+	if _pause_tween != null and _pause_tween.is_valid():
+		_pause_tween.kill()
+	_pause_tween = create_tween()
+	_pause_tween.tween_property(_pause_button, "scale", Vector2.ONE * target_scale, feedback.button_pop_time)
 
 
 func _sync_pulse_pivot() -> void:

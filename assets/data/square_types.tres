@@ -24,8 +24,8 @@ size_min = 30.0
 size_max = 46.0
 speed_multiplier = 1.45
 point_multiplier = 1.0
-homing_rate = 30.0
-max_drift = 80.0
+homing_rate = 60.0
+max_drift = 120.0
 is_pickup = false
 shield_duration = 0.0
 

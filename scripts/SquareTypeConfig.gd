@@ -27,8 +27,8 @@ func _init() -> void:
 		red.size_min = 30.0
 		red.size_max = 46.0
 		red.speed_multiplier = 1.45
-		red.homing_rate = 30.0
-		red.max_drift = 80.0
+		red.homing_rate = 60.0
+		red.max_drift = 120.0
 	if big == null:
 		big = SquareVariant.new()
 		big.type = 3

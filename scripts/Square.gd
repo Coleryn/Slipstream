@@ -29,6 +29,7 @@ var _shield_duration: float = 0.0
 var _player_x: float = 0.0
 var _push_velocity: Vector2 = Vector2.ZERO
 var _push_left: float = 0.0
+var _pulse_credit_left: float = 0.0
 var _push_total: float = 1.0
 var _shake_left: float = 0.0
 var _shake_strength: float = 0.0
@@ -57,6 +58,7 @@ func activate(variant: SquareVariant, in_size: float, in_speed: float, in_fade_t
 	_near_miss_done = false
 	_push_velocity = Vector2.ZERO
 	_push_left = 0.0
+	_pulse_credit_left = 0.0
 	_push_total = 1.0
 	_shake_left = 0.0
 	show()
@@ -128,7 +130,7 @@ func mark_near_miss() -> void:
 	_near_miss_done = true
 
 
-func apply_push(direction: Vector2, strength: float, duration: float, shake: float) -> void:
+func apply_push(direction: Vector2, strength: float, duration: float, shake: float, credit: float = 0.0) -> void:
 	if direction.length_squared() <= 0.0001:
 		direction = Vector2.UP
 	_push_velocity = direction.normalized() * strength
@@ -136,6 +138,7 @@ func apply_push(direction: Vector2, strength: float, duration: float, shake: flo
 	_push_left = _push_total
 	_shake_left = _push_total
 	_shake_strength = shake
+	_pulse_credit_left = maxf(credit, 0.0)
 	set_process(true)
 	queue_redraw()
 
@@ -144,7 +147,15 @@ func is_pushed() -> bool:
 	return _push_left > 0.0
 
 
+## True for a short while after a Pulse shoved this square, so crashes it
+## causes can pay a bonus.
+func has_pulse_credit() -> bool:
+	return _pulse_credit_left > 0.0
+
+
 func _process(delta: float) -> void:
+	if _pulse_credit_left > 0.0:
+		_pulse_credit_left = maxf(_pulse_credit_left - delta, 0.0)
 	if _homing_rate > 0.0 and _drift_used < _max_drift:
 		_apply_homing(delta)
 	_apply_push(delta)

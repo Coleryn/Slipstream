@@ -2,7 +2,7 @@ extends CanvasLayer
 
 ## Full-screen fade used for every scene change.
 
-const FADE_COLOR: Color = Color(0.164706, 0.266667, 0.364706, 1)
+const FADE_COLOR: Color = Palette.BACKGROUND
 
 var _veil: ColorRect
 var _tween: Tween

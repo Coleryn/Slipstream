@@ -9,6 +9,11 @@ extends Node2D
 @export_range(1.0, 200.0, 1.0) var points_per_second: float = 12.0
 @export_range(1, 500, 1) var crash_bonus: int = 50
 
+@export_range(1.0, 5.0, 0.5) var pulse_crash_multiplier: float = 2.0
+
+@export_group("Input")
+@export var second_finger_pulse: bool = true
+
 @export_group("Combo")
 @export_range(0.5, 5.0, 0.1) var combo_window: float = 2.0
 @export_range(2, 16, 1) var combo_cap: int = 8
@@ -91,6 +96,10 @@ func _on_squares_crashed(first: Square, second: Square) -> void:
 	var impact: Vector2 = (first_position + second_position) * 0.5
 	var multiplier: int = GameState.register_crash(combo_window, combo_cap)
 	var points: float = maxf(first.point_multiplier(), second.point_multiplier())
+	var pulse_crash: bool = first.has_pulse_credit() or second.has_pulse_credit()
+	var major: bool = pulse_crash or points > 1.0 or multiplier >= feedback.slowmo_major_combo
+	if pulse_crash:
+		points *= pulse_crash_multiplier
 	var awarded: int = int(round(float(crash_bonus) * float(multiplier) * points))
 	GameState.add_score(float(awarded))
 	_shockwaves.emit(first_position, first_color, first.size)
@@ -99,12 +108,19 @@ func _on_squares_crashed(first: Square, second: Square) -> void:
 	_burst.emit_burst(second_position, second_color, feedback.crash_particles, feedback.crash_particle_speed, feedback.particle_size, feedback.particle_lifetime)
 	_popups.show_text(impact, "+%d" % awarded, feedback.popup_rise, feedback.popup_lifetime, feedback.popup_font_size)
 	_start_shake(feedback.crash_shake_duration, feedback.crash_shake_strength)
-	_start_slowmo()
+	if major:
+		_start_slowmo(feedback.slowmo_scale, feedback.slowmo_duration)
+	else:
+		_start_slowmo(feedback.slowmo_minor_scale, feedback.slowmo_minor_duration)
 	AudioManager.play_crash(multiplier)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _dead:
+		return
+	var touch := event as InputEventScreenTouch
+	if second_finger_pulse and touch != null and touch.pressed and touch.index >= 1:
+		_try_pulse()
 		return
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo and key.keycode == KEY_SPACE:
@@ -122,7 +138,7 @@ func _try_pulse() -> void:
 	for square in _spawner.active_squares():
 		var offset: Vector2 = square.position - origin
 		if offset.length() <= radius + square.size * 0.5:
-			square.apply_push(offset, feedback.pulse_push_strength, feedback.pulse_push_duration, feedback.pulse_square_shake)
+			square.apply_push(offset, feedback.pulse_push_strength, feedback.pulse_push_duration, feedback.pulse_square_shake, feedback.pulse_credit_time)
 	AudioManager.play_pulse()
 
 
@@ -146,6 +162,7 @@ func _on_player_died() -> void:
 	_spawner.freeze_all()
 	_hud.show_pulse_button(false)
 	_hud.show_pause_button(false)
+	AudioManager.set_music_ducked(true)
 	_player.play_death(feedback.player_shrink_time)
 	_burst.emit_burst(_player.position, Palette.PLAYER, feedback.death_particles, feedback.particle_speed, feedback.particle_size, feedback.particle_lifetime)
 	AudioManager.play_death()
@@ -167,11 +184,11 @@ func _run_death_sequence(token: int, new_best: bool) -> void:
 	_game_over.show_result(int(GameState.score), GameState.high_score, new_best, feedback.ui_fade_time)
 
 
-func _start_slowmo() -> void:
+func _start_slowmo(time_scale: float, duration: float) -> void:
 	_slowmo_token += 1
 	var token: int = _slowmo_token
-	Engine.time_scale = feedback.slowmo_scale
-	await get_tree().create_timer(feedback.slowmo_duration, false, false, true).timeout
+	Engine.time_scale = time_scale
+	await get_tree().create_timer(duration, false, false, true).timeout
 	if token != _slowmo_token:
 		return
 	Engine.time_scale = 1.0
@@ -181,6 +198,7 @@ func _restart() -> void:
 	_death_token += 1
 	_slowmo_token += 1
 	Engine.time_scale = 1.0
+	AudioManager.set_music_ducked(false)
 	_dead = false
 	_shake_left = 0.0
 	_camera.offset = Vector2.ZERO
@@ -218,14 +236,18 @@ func _pause_game() -> void:
 	if _dead or get_tree().paused:
 		return
 	_pause_overlay.show_overlay()
+	AudioManager.set_music_ducked(true)
 	get_tree().paused = true
 
 
 func _resume_game() -> void:
 	_pause_overlay.hide_overlay()
+	AudioManager.set_music_ducked(false)
 	get_tree().paused = false
 
 
 func _to_menu() -> void:
+	AudioManager.set_music_ducked(false)
+	Engine.time_scale = 1.0
 	get_tree().paused = false
 	Transition.change_scene("res://scenes/Menu.tscn")

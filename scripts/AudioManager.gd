@@ -2,6 +2,8 @@ extends Node
 
 ## Audio hooks. Uses a real file if one exists, otherwise a generated blip.
 ## Does nothing at all when no stream is available.
+## Background music: drop a loop at assets/audio/bgm.ogg to replace the
+## generated track (see MusicBuilder). The player survives scene changes.
 
 const SAMPLE_RATE: int = 22050
 const VOICE_COUNT: int = 6
@@ -23,22 +25,36 @@ const TONES: Dictionary = {
 }
 
 const SETTINGS_PATH: String = "user://settings.cfg"
+const MUSIC_PATH: String = "res://assets/audio/bgm.ogg"
+const MUSIC_DUCK_DB: float = -9.0
+const MUSIC_DUCK_TIME: float = 0.2
 
 var placeholder_enabled: bool = true
+var procedural_music: bool = true
+var music_volume_db: float = -14.0
 var sound_enabled: bool = true
 var music_enabled: bool = true
 
 var _voices: Array[AudioStreamPlayer] = []
 var _streams: Dictionary = {}
 var _next_voice: int = 0
+var _music: AudioStreamPlayer
+var _music_task: int = -1
+var _music_tween: Tween
+var _music_ducked: bool = false
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	load_settings()
 	for i in VOICE_COUNT:
 		var voice := AudioStreamPlayer.new()
 		add_child(voice)
 		_voices.append(voice)
+	_music = AudioStreamPlayer.new()
+	_music.volume_db = music_volume_db
+	add_child(_music)
+	_load_music()
 
 
 func set_sound_enabled(value: bool) -> void:
@@ -49,6 +65,19 @@ func set_sound_enabled(value: bool) -> void:
 func set_music_enabled(value: bool) -> void:
 	music_enabled = value
 	save_settings()
+	_refresh_music()
+
+
+## Lowers the music under pause and game over, and restores it afterwards.
+func set_music_ducked(ducked: bool) -> void:
+	if _music == null or ducked == _music_ducked:
+		return
+	_music_ducked = ducked
+	if _music_tween != null and _music_tween.is_valid():
+		_music_tween.kill()
+	_music_tween = create_tween()
+	var target: float = music_volume_db + (MUSIC_DUCK_DB if ducked else 0.0)
+	_music_tween.tween_property(_music, "volume_db", target, MUSIC_DUCK_TIME)
 
 
 func toggle_sound() -> void:
@@ -76,6 +105,12 @@ func save_settings() -> void:
 
 
 func _exit_tree() -> void:
+	if _music_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_music_task)
+		_music_task = -1
+	if _music != null:
+		_music.stop()
+		_music.stream = null
 	for voice in _voices:
 		voice.stop()
 		voice.stream = null
@@ -157,3 +192,39 @@ func _build_tone(frequency: float, duration: float, volume: float) -> AudioStrea
 	stream.stereo = false
 	stream.data = data
 	return stream
+
+
+func _load_music() -> void:
+	if AudioServer.get_driver_name() == "Dummy":
+		return
+	if ResourceLoader.exists(MUSIC_PATH):
+		_on_music_ready(load(MUSIC_PATH) as AudioStream)
+	elif procedural_music:
+		_music_task = WorkerThreadPool.add_task(_build_music_task)
+
+
+func _build_music_task() -> void:
+	var stream: AudioStream = MusicBuilder.build()
+	_on_music_ready.call_deferred(stream)
+
+
+func _on_music_ready(stream: AudioStream) -> void:
+	if _music_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_music_task)
+		_music_task = -1
+	if stream == null or _music == null:
+		return
+	if "loop" in stream:
+		stream.set("loop", true)
+	_music.stream = stream
+	_refresh_music()
+
+
+func _refresh_music() -> void:
+	if _music == null or _music.stream == null:
+		return
+	if music_enabled:
+		if not _music.playing:
+			_music.play()
+	else:
+		_music.stop()

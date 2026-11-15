@@ -98,7 +98,7 @@ Feedback rules:
 - Effects are **short** (under about 0.4 s) and **subtle**. Never full-screen flashes or long particle storms.
 - Screen shake is small and decays quickly. Respect a `shake_enabled` flag for accessibility.
 - Keep all timings, shake strengths, and slow-motion values in one `FeedbackConfig` script as exported variables so they can be tuned.
-- Sound is minimal: soft clicks, a pop on crash, a low thud on death. No music overload. Placeholder hooks are fine.
+- Sound is minimal: soft clicks, a pop on crash, a low thud on death. Background music is allowed as one quiet, calm loop (see AGENTS.md, "Audio and music"); no music overload. Placeholder hooks are fine.
 
 ## Implementation checklist for any visual task
 
